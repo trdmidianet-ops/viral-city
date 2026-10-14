@@ -1,26 +1,97 @@
 @import "tailwindcss";
 
+/* Viral City — paleta "pôr do sol neon" (original, sem assets de terceiros) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --night: #0b0618;
+  --night-2: #140a2a;
+  --night-3: #1e1140;
+  --pink: #ff2e88;
+  --orange: #ff8a3d;
+  --sun: #ffd166;
+  --purple: #8b3dff;
+  --cyan: #22d3ee;
+  --ink: #f6eefe;
+  --muted: #b7a8d6;
+  --line: rgba(255, 255, 255, 0.09);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-night: var(--night);
+  --color-night-2: var(--night-2);
+  --color-night-3: var(--night-3);
+  --color-pink: var(--pink);
+  --color-orange: var(--orange);
+  --color-sun: var(--sun);
+  --color-purple: var(--purple);
+  --color-cyan: var(--cyan);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--night);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+}
+
+.text-sunset {
+  background: linear-gradient(180deg, var(--sun) 0%, var(--orange) 45%, var(--pink) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-neon {
+  color: var(--ink);
+  text-shadow:
+    0 0 8px rgba(255, 46, 136, 0.8),
+    0 0 24px rgba(255, 46, 136, 0.5),
+    0 0 48px rgba(139, 61, 255, 0.4);
+}
+
+.btn-sunset {
+  background: linear-gradient(90deg, var(--pink), var(--orange));
+  box-shadow: 0 10px 30px -10px rgba(255, 46, 136, 0.7);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-sunset:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 36px -10px rgba(255, 46, 136, 0.9);
+}
+
+.glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--line);
+  backdrop-filter: blur(12px);
+}
+
+/* Grade retrô em perspectiva no chão do hero */
+.retro-grid {
+  background-image:
+    linear-gradient(rgba(255, 46, 136, 0.55) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 46, 136, 0.55) 1px, transparent 1px);
+  background-size: 60px 60px;
+  transform: perspective(420px) rotateX(62deg);
+  transform-origin: top center;
+  mask-image: linear-gradient(to bottom, black 0%, transparent 85%);
+  animation: grid-move 3s linear infinite;
+}
+
+@keyframes grid-move {
+  to {
+    background-position: 0 60px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .retro-grid {
+    animation: none;
+  }
 }
