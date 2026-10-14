@@ -24,7 +24,8 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user && request.nextUrl.pathname.startsWith("/painel")) {
+  const { pathname } = request.nextUrl;
+  if (!user && (pathname.startsWith("/painel") || pathname.startsWith("/api/oauth"))) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -34,5 +35,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/painel/:path*", "/login"],
+  matcher: ["/painel/:path*", "/login", "/api/oauth/:path*"],
 };

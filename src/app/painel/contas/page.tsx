@@ -1,15 +1,173 @@
-import { Users } from "lucide-react";
-import { EmptyState, PageHeader } from "@/components/painel-ui";
+import { CheckCircle2, Plus, TriangleAlert, Unplug } from "lucide-react";
+import { PageHeader } from "@/components/painel-ui";
+import { platforms } from "@/components/platform-icons";
+import { listAccounts, type Account } from "@/lib/accounts/store";
+import { appUrl, isConfigured, providers, redirectUri } from "@/lib/oauth/providers";
+import { disconnectAccount } from "./actions";
+import { setupGuides } from "./setup-guides";
 
-export default function ContasPage() {
+export const dynamic = "force-dynamic";
+
+export default async function ContasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ conectado?: string; erro?: string }>;
+}) {
+  const { conectado, erro } = await searchParams;
+  const accounts = await listAccounts();
+  const httpsReady = appUrl().startsWith("https://");
+
   return (
     <>
-      <PageHeader title="Contas" subtitle="Conecte várias contas de cada rede." phase={3} />
-      <EmptyState
-        icon={Users}
-        title="Nenhuma conta conectada"
-        text="Na fase 3 você conecta quantos canais e perfis quiser via login oficial (OAuth) do YouTube, TikTok e Instagram."
-      />
+      <PageHeader title="Contas" subtitle="Conecte quantas contas quiser em cada rede, pelo login oficial." />
+
+      {conectado && (
+        <p className="mb-6 flex items-center gap-2 rounded-xl border border-cyan/30 bg-cyan/10 px-4 py-3 text-sm text-cyan">
+          <CheckCircle2 size={18} /> Conta “{conectado}” conectada.
+        </p>
+      )}
+      {erro && (
+        <p className="mb-6 flex items-center gap-2 rounded-xl border border-pink/40 bg-pink/10 px-4 py-3 text-sm text-pink">
+          <TriangleAlert size={18} /> {erro}
+        </p>
+      )}
+
+      <div className="space-y-6">
+        {platforms.map(({ id, name, Icon, color }) => {
+          const provider = providers[id];
+          const configured = isConfigured(provider);
+          const list = accounts.filter((a) => a.platform === id);
+          const blockedByHttps = provider.needsHttps && !httpsReady;
+
+          return (
+            <section key={id} className="glass rounded-2xl p-5 sm:p-6">
+              <header className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Icon className={color} />
+                  <h2 className="font-semibold">{name}</h2>
+                  <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-muted">
+                    {list.length} conta{list.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+                {configured && !blockedByHttps ? (
+                  <a
+                    href={`/api/oauth/${id}/start`}
+                    className="btn-sunset flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white"
+                  >
+                    <Plus size={16} /> Conectar conta
+                  </a>
+                ) : (
+                  <span className="rounded-full border border-sun/30 bg-sun/10 px-3 py-1 text-xs text-sun">
+                    {configured ? "Precisa de endereço HTTPS" : "Falta configurar"}
+                  </span>
+                )}
+              </header>
+
+              {list.length > 0 && (
+                <ul className="mt-5 divide-y divide-line">
+                  {list.map((a) => (
+                    <AccountRow key={a.id} account={a} />
+                  ))}
+                </ul>
+              )}
+
+              {(!configured || blockedByHttps) && (
+                <SetupGuide
+                  platform={id}
+                  env={provider.env}
+                  callback={redirectUri(provider)}
+                  configured={configured}
+                  blockedByHttps={blockedByHttps}
+                />
+              )}
+            </section>
+          );
+        })}
+      </div>
+
+      <p className="mt-6 text-xs text-muted">
+        Os tokens ficam criptografados nesta máquina (.data/accounts.json). Nenhuma senha é guardada.
+      </p>
     </>
+  );
+}
+
+function AccountRow({ account }: { account: Account }) {
+  const expired = account.expiresAt && new Date(account.expiresAt) < new Date();
+  return (
+    <li className="flex items-center gap-3 py-3">
+      {account.avatarUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- avatares vêm de CDNs variadas
+        <img src={account.avatarUrl} alt="" className="h-10 w-10 rounded-full object-cover" referrerPolicy="no-referrer" />
+      ) : (
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-night-3 font-semibold">
+          {account.name.slice(0, 1).toUpperCase()}
+        </span>
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{account.name}</p>
+        <p className="truncate text-xs text-muted">
+          {account.handle ? `${account.handle} · ` : ""}
+          conectada em {new Date(account.connectedAt).toLocaleDateString("pt-BR")}
+          {expired && " · token será renovado ao postar"}
+        </p>
+      </div>
+      <form action={disconnectAccount}>
+        <input type="hidden" name="id" value={account.id} />
+        <button className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs text-muted hover:bg-white/5 hover:text-pink">
+          <Unplug size={14} /> Desconectar
+        </button>
+      </form>
+    </li>
+  );
+}
+
+function SetupGuide({
+  platform,
+  env,
+  callback,
+  configured,
+  blockedByHttps,
+}: {
+  platform: keyof typeof setupGuides;
+  env: [string, string];
+  callback: string;
+  configured: boolean;
+  blockedByHttps: boolean;
+}) {
+  const guide = setupGuides[platform];
+  return (
+    <div className="mt-5 rounded-xl border border-line bg-night/40 p-4 text-sm">
+      {blockedByHttps && (
+        <p className="mb-3 text-sun">
+          Esta rede só aceita retorno em HTTPS. Rode um túnel (ex.: <code>cloudflared tunnel --url http://localhost:3000</code>)
+          e coloque o endereço gerado em <code>APP_URL</code> no .env.local.
+        </p>
+      )}
+      {!configured && (
+        <ol className="list-decimal space-y-1.5 pl-5 text-muted">
+          {guide.steps.map((s) => (
+            <li key={s}>{s}</li>
+          ))}
+        </ol>
+      )}
+      <dl className="mt-4 space-y-2 text-xs">
+        <div>
+          <dt className="text-muted">Endereço de retorno (redirect URI)</dt>
+          <dd className="mt-1 break-all rounded-md bg-night px-2 py-1.5 font-mono text-orange">{callback}</dd>
+        </div>
+        {!configured && (
+          <div>
+            <dt className="text-muted">No .env.local</dt>
+            <dd className="mt-1 rounded-md bg-night px-2 py-1.5 font-mono text-ink">
+              {env[0]}=...
+              <br />
+              {env[1]}=...
+            </dd>
+          </div>
+        )}
+      </dl>
+      {guide.note && <p className="mt-3 text-xs text-muted">{guide.note}</p>}
+    </div>
   );
 }
