@@ -16,10 +16,20 @@ export default async function ContasPage({
   const { conectado, erro } = await searchParams;
   const accounts = await listAccounts();
   const httpsReady = appUrl().startsWith("https://");
+  // Na Vercel o disco é somente leitura: o cofre local não funciona até o Supabase entrar
+  const canStore = !process.env.VERCEL;
 
   return (
     <>
       <PageHeader title="Contas" subtitle="Conecte quantas contas quiser em cada rede, pelo login oficial." />
+
+      {!canStore && (
+        <p className="mb-6 flex items-center gap-2 rounded-xl border border-sun/30 bg-sun/10 px-4 py-3 text-sm text-sun">
+          <TriangleAlert size={18} className="shrink-0" />
+          Na versão online, conectar contas depende do banco de dados (Supabase), que ainda não foi ativado. Por
+          enquanto, conecte as contas pela versão no seu computador.
+        </p>
+      )}
 
       {conectado && (
         <p className="mb-6 flex items-center gap-2 rounded-xl border border-cyan/30 bg-cyan/10 px-4 py-3 text-sm text-cyan">
@@ -49,7 +59,7 @@ export default async function ContasPage({
                     {list.length} conta{list.length === 1 ? "" : "s"}
                   </span>
                 </div>
-                {configured && !blockedByHttps ? (
+                {configured && !blockedByHttps && canStore ? (
                   <a
                     href={`/api/oauth/${id}/start`}
                     className="btn-sunset flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-white"
@@ -58,7 +68,7 @@ export default async function ContasPage({
                   </a>
                 ) : (
                   <span className="rounded-full border border-sun/30 bg-sun/10 px-3 py-1 text-xs text-sun">
-                    {configured ? "Precisa de endereço HTTPS" : "Falta configurar"}
+                    {!configured ? "Falta configurar" : !canStore ? "Precisa do banco de dados" : "Precisa de endereço HTTPS"}
                   </span>
                 )}
               </header>

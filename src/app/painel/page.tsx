@@ -13,7 +13,7 @@ const stats = [
 const roadmap = [
   { phase: 1, title: "Base, visual e login", done: true },
   { phase: 2, title: "Tendências do YouTube por nicho", done: true },
-  { phase: 3, title: "Conectar várias contas (OAuth)", done: false },
+  { phase: 3, title: "Conectar várias contas (OAuth)", done: true },
   { phase: 4, title: "Gerador de vídeos originais", done: false },
   { phase: 5, title: "Agenda e postagem autônoma", done: false },
 ];

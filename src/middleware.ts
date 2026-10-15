@@ -1,9 +1,23 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { GATE_COOKIE, gatePassword, gateToken } from "@/lib/gate";
 import { isSupabaseConfigured, supabaseAnonKey, supabaseUrl } from "@/lib/supabase/config";
 
+const isProtected = (pathname: string) => pathname.startsWith("/painel") || pathname.startsWith("/api/oauth");
+
 export async function middleware(request: NextRequest) {
-  if (!isSupabaseConfigured) return NextResponse.next();
+  const { pathname } = request.nextUrl;
+
+  if (!isSupabaseConfigured) {
+    // Sem Supabase: protege o painel com APP_PASSWORD, se definida
+    const password = gatePassword();
+    if (!password || !isProtected(pathname)) return NextResponse.next();
+    if (request.cookies.get(GATE_COOKIE)?.value === (await gateToken(password))) return NextResponse.next();
+    const url = request.nextUrl.clone();
+    url.pathname = "/acesso";
+    url.search = pathname.startsWith("/painel") ? `?next=${encodeURIComponent(pathname)}` : "";
+    return NextResponse.redirect(url);
+  }
 
   let response = NextResponse.next({ request });
 
@@ -24,8 +38,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
-  if (!user && (pathname.startsWith("/painel") || pathname.startsWith("/api/oauth"))) {
+  if (!user && isProtected(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
