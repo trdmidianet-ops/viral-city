@@ -3,10 +3,12 @@ import { Logo } from "@/components/brand";
 import { signOut } from "@/app/login/actions";
 import { getUser } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { gatePassword } from "@/lib/gate";
 import { PainelNav } from "./nav";
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
   const user = await getUser();
+  const gated = !isSupabaseConfigured && Boolean(gatePassword());
 
   return (
     <div className="min-h-screen md:flex">
@@ -16,7 +18,7 @@ export default async function PainelLayout({ children }: { children: React.React
         </div>
         <PainelNav />
         <div className="mt-auto hidden border-t border-line pt-4 text-sm md:block">
-          <p className="truncate px-1 text-muted">{user?.email ?? "Modo demo"}</p>
+          <p className="truncate px-1 text-muted">{user?.email ?? (gated ? "Acesso por senha" : "Modo demo")}</p>
           {isSupabaseConfigured && (
             <form action={signOut}>
               <button className="mt-2 flex w-full items-center gap-2 rounded-lg px-1 py-2 text-muted hover:text-ink">
@@ -28,9 +30,9 @@ export default async function PainelLayout({ children }: { children: React.React
       </aside>
 
       <div className="flex-1">
-        {!isSupabaseConfigured && (
+        {!isSupabaseConfigured && !gated && (
           <div className="border-b border-sun/20 bg-sun/10 px-6 py-2 text-xs text-sun">
-            Modo demo: configure o Supabase em <code>.env.local</code> para ativar login e salvar dados.
+            Painel aberto: defina APP_PASSWORD em <code>.env.local</code> para proteger o acesso.
           </div>
         )}
         <main className="mx-auto max-w-6xl p-4 sm:p-8">{children}</main>

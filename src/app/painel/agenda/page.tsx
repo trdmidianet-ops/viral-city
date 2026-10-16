@@ -89,7 +89,7 @@ export default async function AgendaPage() {
                     <legend className="mb-1 text-xs text-muted">Dias</legend>
                     {weekdays.map((day, d) => (
                       <label key={day} className="cursor-pointer">
-                        <input type="checkbox" name="weekday" value={d} className="peer sr-only" />
+                        <input type="checkbox" name="weekday" value={d} aria-label={day} className="peer sr-only" />
                         <span className="block rounded-lg border border-line px-2.5 py-1.5 text-xs text-muted peer-checked:border-pink peer-checked:bg-pink/15 peer-checked:text-ink peer-focus-visible:ring-2 peer-focus-visible:ring-pink">
                           {day.slice(0, 3)}
                         </span>
