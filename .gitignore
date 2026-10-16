@@ -43,3 +43,6 @@ next-env.d.ts
 
 # dados locais (contas conectadas)
 /.data
+
+.vercel
+.env*

@@ -1,9 +1,11 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Eye, Gauge, Heart, Wand2 } from "lucide-react";
 import { formatCompact, formatDuration, timeAgo } from "@/lib/youtube/metrics";
 import type { TrendVideo } from "@/lib/youtube/trending";
 
-export function VideoCard({ video, rank }: { video: TrendVideo; rank: number }) {
+export function VideoCard({ video, rank, niche }: { video: TrendVideo; rank: number; niche: string }) {
+  const refHref = `/painel/gerador?${new URLSearchParams({ ref: video.id, titulo: video.title, canal: video.channel, nicho: niche })}`;
   return (
     <article className="glass flex flex-col overflow-hidden rounded-2xl">
       <a href={video.url} target="_blank" rel="noopener noreferrer" className="relative block aspect-video bg-night-3">
@@ -41,13 +43,12 @@ export function VideoCard({ video, rank }: { video: TrendVideo; rank: number }) 
           </div>
         </dl>
 
-        <button
-          disabled
-          title="Disponível na fase 4 (Gerador)"
-          className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-line py-2 text-xs text-muted disabled:cursor-not-allowed"
+        <Link
+          href={refHref}
+          className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-pink/40 py-2 text-xs text-ink transition hover:bg-pink/10"
         >
-          <Wand2 size={14} /> Usar como referência (fase 4)
-        </button>
+          <Wand2 size={14} /> Usar como referência
+        </Link>
       </div>
     </article>
   );

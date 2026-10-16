@@ -1,7 +1,7 @@
 import { CheckCircle2, Plus, TriangleAlert, Unplug } from "lucide-react";
 import { PageHeader } from "@/components/painel-ui";
 import { platforms } from "@/components/platform-icons";
-import { listAccounts, type Account } from "@/lib/accounts/store";
+import { canStoreAccounts, listAccounts, type Account } from "@/lib/accounts/store";
 import { appUrl, isConfigured, providers, redirectUri } from "@/lib/oauth/providers";
 import { disconnectAccount } from "./actions";
 import { setupGuides } from "./setup-guides";
@@ -16,8 +16,8 @@ export default async function ContasPage({
   const { conectado, erro } = await searchParams;
   const accounts = await listAccounts();
   const httpsReady = appUrl().startsWith("https://");
-  // Na Vercel o disco é somente leitura: o cofre local não funciona até o Supabase entrar
-  const canStore = !process.env.VERCEL;
+  // Na Vercel o disco é somente leitura: sem banco configurado não dá para guardar contas
+  const canStore = canStoreAccounts();
 
   return (
     <>
@@ -96,7 +96,7 @@ export default async function ContasPage({
       </div>
 
       <p className="mt-6 text-xs text-muted">
-        Os tokens ficam criptografados nesta máquina (.data/accounts.json). Nenhuma senha é guardada.
+        Os tokens ficam criptografados (no banco da Viral City ou nesta máquina). Nenhuma senha é guardada.
       </p>
     </>
   );

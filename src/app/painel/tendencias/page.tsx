@@ -43,12 +43,12 @@ export default async function TendenciasPage({
       </div>
 
       <TrendFiltersForm filters={filters} />
-      <Results result={result} />
+      <Results result={result} niche={filters.niche.id} />
     </>
   );
 }
 
-function Results({ result }: { result: TrendResult }) {
+function Results({ result, niche }: { result: TrendResult; niche: string }) {
   if (!result.ok) {
     if (result.reason === "missing-key" || result.reason === "invalid-key") return <KeySetup invalid={result.reason === "invalid-key"} />;
     const messages = {
@@ -76,7 +76,7 @@ function Results({ result }: { result: TrendResult }) {
       </p>
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {result.videos.map((v, i) => (
-          <VideoCard key={v.id} video={v} rank={i + 1} />
+          <VideoCard key={v.id} video={v} rank={i + 1} niche={niche} />
         ))}
       </div>
     </>
