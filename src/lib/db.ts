@@ -19,7 +19,7 @@ export function db(): SupabaseClient {
 }
 
 /** Lança erro legível se a consulta falhou. */
-export function must<T>(res: { data: T | null; error: { message: string } | null }, what: string): T {
+export function must<T>(res: { data: unknown; error: { message: string } | null }, what: string): T {
   if (res.error) throw new Error(`${what}: ${res.error.message}`);
   return res.data as T;
 }

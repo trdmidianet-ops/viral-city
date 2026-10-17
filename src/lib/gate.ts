@@ -18,3 +18,12 @@ export async function gateToken(password: string): Promise<string> {
 export function safeNext(next: unknown): string {
   return typeof next === "string" && /^\/painel(\/[\w-]*)*$/.test(next) ? next : "/painel";
 }
+
+/** Confere o acesso dentro de uma rota (para rotas que não passam pelo middleware). */
+export async function hasAccess(cookieValue: string | undefined, loggedIn: () => Promise<boolean>): Promise<boolean> {
+  const { isSupabaseConfigured } = await import("@/lib/supabase/config");
+  if (isSupabaseConfigured) return loggedIn();
+  const password = gatePassword();
+  if (!password) return true;
+  return cookieValue === (await gateToken(password));
+}

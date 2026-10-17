@@ -3,7 +3,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { GATE_COOKIE, gatePassword, gateToken } from "@/lib/gate";
 import { isSupabaseConfigured, supabaseAnonKey, supabaseUrl } from "@/lib/supabase/config";
 
-const isProtected = (pathname: string) => pathname.startsWith("/painel") || pathname.startsWith("/api/oauth");
+// /api/uploads fica fora do middleware (ele limitaria o corpo a 10 MB); a rota confere a senha sozinha.
+const PROTECTED = ["/painel", "/api/oauth", "/api/clips"];
+const isProtected = (pathname: string) => PROTECTED.some((p) => pathname.startsWith(p));
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -48,5 +50,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/painel/:path*", "/login", "/api/oauth/:path*"],
+  matcher: ["/painel/:path*", "/login", "/api/oauth/:path*", "/api/clips/:path*"],
 };

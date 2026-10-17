@@ -24,13 +24,14 @@ export type Video = {
 
 const T = "vc_videos";
 
-export async function createVideo(input: {
+/** Corte aprovado vira um vídeo pronto para a agenda postar. */
+export async function createReadyVideo(input: {
   accountId: string | null;
   reference: Reference | null;
   title: string;
   description: string;
-  script: string;
-  voice: string;
+  localPath: string;
+  duration: number;
 }): Promise<Video> {
   return must<Video>(
     await db()
@@ -40,8 +41,9 @@ export async function createVideo(input: {
         reference: input.reference,
         title: input.title,
         description: input.description,
-        script: input.script,
-        voice: input.voice,
+        status: "ready",
+        local_path: input.localPath,
+        duration_seconds: input.duration,
       })
       .select("*")
       .single(),
@@ -64,20 +66,6 @@ async function update(id: string, patch: Partial<Video>, onlyIfStatus?: VideoSta
   if (onlyIfStatus) q = q.in("status", onlyIfStatus);
   return must<Video[]>(await q.select("*"), "Atualizar vídeo");
 }
-
-/** Pega o próximo vídeo da fila de forma atômica (só um worker processa cada vídeo). */
-export async function claimNextQueued(): Promise<Video | null> {
-  const next = must<Pick<Video, "id">[]>(
-    await db().from(T).select("id").eq("status", "queued").order("created_at").limit(1),
-    "Fila",
-  )[0];
-  if (!next) return null;
-  const [claimed] = await update(next.id, { status: "rendering", error: null }, ["queued"]);
-  return claimed ?? null;
-}
-
-export const markReady = (id: string, localPath: string, duration: number) =>
-  update(id, { status: "ready", local_path: localPath, duration_seconds: duration });
 
 export const markFailed = (id: string, error: string) => update(id, { status: "failed", error: error.slice(0, 1000) });
 

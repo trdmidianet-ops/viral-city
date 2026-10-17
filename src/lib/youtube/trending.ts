@@ -1,4 +1,3 @@
-import "server-only";
 import { engagementRate, parseDuration, viewsPerHour } from "./metrics";
 import { periods, regions, type TrendFilters } from "./niches";
 

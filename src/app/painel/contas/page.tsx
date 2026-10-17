@@ -1,9 +1,10 @@
-import { CheckCircle2, Plus, TriangleAlert, Unplug } from "lucide-react";
+import { CheckCircle2, ImageUp, Plus, TriangleAlert, Unplug, X } from "lucide-react";
 import { PageHeader } from "@/components/painel-ui";
 import { activePlatforms } from "@/components/platform-icons";
-import { canStoreAccounts, listAccounts, type Account } from "@/lib/accounts/store";
+import { canStoreAccounts, getAccountLogo, listAccounts, type Account } from "@/lib/accounts/store";
+import { isDbConfigured } from "@/lib/db";
 import { appUrl, isConfigured, providers, redirectUri } from "@/lib/oauth/providers";
-import { disconnectAccount } from "./actions";
+import { disconnectAccount, saveLogoAction } from "./actions";
 import { setupGuides } from "./setup-guides";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,9 @@ export default async function ContasPage({
 }) {
   const { conectado, erro } = await searchParams;
   const accounts = await listAccounts();
+  const logos = isDbConfigured()
+    ? Object.fromEntries(await Promise.all(accounts.map(async (a) => [a.id, await getAccountLogo(a.id)] as const)))
+    : {};
   const httpsReady = appUrl().startsWith("https://");
   // Na Vercel o disco é somente leitura: sem banco configurado não dá para guardar contas
   const canStore = canStoreAccounts();
@@ -76,7 +80,7 @@ export default async function ContasPage({
               {list.length > 0 && (
                 <ul className="mt-5 divide-y divide-line">
                   {list.map((a) => (
-                    <AccountRow key={a.id} account={a} />
+                    <AccountRow key={a.id} account={a} logo={logos[a.id] ?? null} canLogo={isDbConfigured()} />
                   ))}
                 </ul>
               )}
@@ -102,10 +106,10 @@ export default async function ContasPage({
   );
 }
 
-function AccountRow({ account }: { account: Account }) {
+function AccountRow({ account, logo, canLogo }: { account: Account; logo: string | null; canLogo: boolean }) {
   const expired = account.expiresAt && new Date(account.expiresAt) < new Date();
   return (
-    <li className="flex items-center gap-3 py-3">
+    <li className="flex flex-wrap items-center gap-3 py-3">
       {account.avatarUrl ? (
         // eslint-disable-next-line @next/next/no-img-element -- avatares vêm de CDNs variadas
         <img src={account.avatarUrl} alt="" className="h-10 w-10 rounded-full object-cover" referrerPolicy="no-referrer" />
@@ -122,6 +126,32 @@ function AccountRow({ account }: { account: Account }) {
           {expired && " · token será renovado ao postar"}
         </p>
       </div>
+      {canLogo && (
+        <div className="flex items-center gap-2">
+          {logo ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element -- logo salva como data URL */}
+              <img src={logo} alt="Logo dos cortes" className="h-9 w-9 rounded-md bg-white/5 object-contain" />
+              <form action={saveLogoAction}>
+                <input type="hidden" name="id" value={account.id} />
+                <input type="hidden" name="remove" value="1" />
+                <button aria-label="Remover logo" className="rounded-md p-1.5 text-muted hover:bg-white/5 hover:text-pink">
+                  <X size={14} />
+                </button>
+              </form>
+            </>
+          ) : (
+            <form action={saveLogoAction} className="flex items-center gap-2">
+              <input type="hidden" name="id" value={account.id} />
+              <label className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-line px-3 py-2 text-xs text-muted hover:text-ink">
+                <ImageUp size={14} /> Logo para os cortes
+                <input type="file" name="logo" accept="image/png,image/jpeg" required className="sr-only" />
+              </label>
+              <button className="rounded-lg border border-pink/50 px-3 py-2 text-xs hover:bg-pink/10">Salvar</button>
+            </form>
+          )}
+        </div>
+      )}
       <form action={disconnectAccount}>
         <input type="hidden" name="id" value={account.id} />
         <button className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs text-muted hover:bg-white/5 hover:text-pink">

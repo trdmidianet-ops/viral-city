@@ -185,3 +185,18 @@ export async function removeAccount(id: string): Promise<boolean> {
 export function canStoreAccounts(): boolean {
   return isDbConfigured() || !process.env.VERCEL;
 }
+
+// ---------- logo do canal (usada nos cortes; só com banco) ----------
+export async function getAccountLogo(id: string): Promise<string | null> {
+  if (!isDbConfigured()) return null;
+  const row = must<{ logo: string | null } | null>(
+    await db().from("vc_accounts").select("logo").eq("id", id).maybeSingle(),
+    "Ler logo",
+  );
+  return row?.logo ?? null;
+}
+
+export async function setAccountLogo(id: string, dataUrl: string | null): Promise<void> {
+  if (!isDbConfigured()) throw new Error("Banco não configurado.");
+  must(await db().from("vc_accounts").update({ logo: dataUrl }).eq("id", id), "Salvar logo");
+}

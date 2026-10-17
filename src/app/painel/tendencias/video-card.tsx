@@ -5,7 +5,7 @@ import { formatCompact, formatDuration, timeAgo } from "@/lib/youtube/metrics";
 import type { TrendVideo } from "@/lib/youtube/trending";
 
 export function VideoCard({ video, rank, niche }: { video: TrendVideo; rank: number; niche: string }) {
-  const refHref = `/painel/gerador?${new URLSearchParams({ ref: video.id, titulo: video.title, canal: video.channel, nicho: niche })}`;
+  const refHref = `/painel/cortes?${new URLSearchParams({ titulo: video.title, nicho: niche })}`;
   return (
     <article className="glass flex flex-col overflow-hidden rounded-2xl">
       <a href={video.url} target="_blank" rel="noopener noreferrer" className="relative block aspect-video bg-night-3">

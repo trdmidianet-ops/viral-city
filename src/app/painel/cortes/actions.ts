@@ -1,0 +1,136 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import { getAccount, listAccounts } from "@/lib/accounts/store";
+import { createSource, deleteSource, getClip, getSource, listClips, updateClip, updateSource, type Framing, type Language, type SourceKind } from "@/lib/clips/repo";
+import { canUseLocalFiles, uploadPath } from "@/lib/clips/local-files";
+import { isDbConfigured } from "@/lib/db";
+import { listChannelUploads } from "@/lib/youtube/channel";
+import { niches } from "@/lib/youtube/niches";
+import { createReadyVideo } from "@/lib/videos/repo";
+
+export type FormState = { error?: string };
+
+const UUID = /^[0-9a-f-]{36}$/i;
+const FRAMINGS: Framing[] = ["center", "blur", "split"];
+const LANGS: Language[] = ["portuguese", "english", "spanish"];
+const str = (f: FormData, k: string, max: number) => String(f.get(k) ?? "").trim().slice(0, max);
+
+export async function createSourceAction(_: FormState, form: FormData): Promise<FormState> {
+  if (!isDbConfigured()) return { error: "Banco de dados não configurado." };
+
+  const kind = str(form, "kind", 10) as SourceKind;
+  const framing = str(form, "framing", 10) as Framing;
+  const language = str(form, "language", 12) as Language;
+  const accountId = str(form, "account", 40);
+  const nicheId = str(form, "niche", 30);
+  if (!FRAMINGS.includes(framing) || !LANGS.includes(language)) return { error: "Opções inválidas." };
+  if (accountId && (!UUID.test(accountId) || !(await getAccount(accountId)))) return { error: "Conta inválida." };
+
+  const base = {
+    account_id: accountId || null,
+    language,
+    framing,
+    captions: form.get("captions") === "on",
+    use_logo: form.get("use_logo") === "on",
+    niche: niches.some((n) => n.id === nicheId) ? nicheId : null,
+    reference_title: str(form, "reference_title", 200) || null,
+    youtube_video_id: null as string | null,
+    source_url: null as string | null,
+    upload_name: null as string | null,
+    title: "",
+  };
+
+  if (kind === "channel") {
+    const videoId = str(form, "video", 20);
+    if (!/^[\w-]{11}$/.test(videoId)) return { error: "Escolha um vídeo do seu canal." };
+    if (!accountId) return { error: "Escolha o canal." };
+    const account = (await listAccounts("youtube")).find((a) => a.id === accountId);
+    const video = account ? (await listChannelUploads(account.externalId)).find((v) => v.id === videoId) : null;
+    if (!video) return { error: "Esse vídeo não está entre os uploads recentes do canal." };
+    await createSource({ ...base, kind, youtube_video_id: videoId, title: video.title });
+  } else if (kind === "link") {
+    const url = str(form, "url", 1000);
+    try {
+      const u = new URL(url);
+      if (!["http:", "https:"].includes(u.protocol)) throw new Error();
+    } catch {
+      return { error: "Cole um link válido (http/https)." };
+    }
+    if (/youtube\.com|youtu\.be/i.test(url)) {
+      return { error: "Links do YouTube não são aceitos: use o link do arquivo (Drive, Dropbox ou MP4) enviado pela campanha." };
+    }
+    if (form.get("permission") !== "on") return { error: "Confirme que você tem permissão do criador para cortar esse vídeo." };
+    await createSource({ ...base, kind, source_url: url, title: str(form, "title", 120) });
+  } else if (kind === "file") {
+    if (!canUseLocalFiles()) return { error: "Envio de arquivo só funciona no painel aberto no seu PC." };
+    const file = uploadPath(str(form, "uploadId", 60));
+    if (!file) return { error: "Envie o arquivo antes de criar os cortes." };
+    const name = str(form, "uploadName", 200);
+    await createSource({ ...base, kind, upload_name: name, title: name.replace(/\.[^.]+$/, ""), local_path: file });
+  } else {
+    return { error: "Escolha a origem do vídeo." };
+  }
+
+  revalidatePath("/painel/cortes");
+  redirect("/painel/cortes?criado=1");
+}
+
+export async function deleteSourceAction(form: FormData) {
+  const id = str(form, "id", 40);
+  if (!isDbConfigured() || !UUID.test(id)) return;
+  await deleteSource(id);
+  revalidatePath("/painel/cortes");
+  redirect("/painel/cortes");
+}
+
+export async function retrySourceAction(form: FormData) {
+  const id = str(form, "id", 40);
+  if (!isDbConfigured() || !UUID.test(id)) return;
+  await updateSource(id, { status: "queued", error: null, progress: null });
+  revalidatePath(`/painel/cortes/${id}`);
+}
+
+/** Troca o enquadramento/legendas/logo e renderiza de novo os cortes ainda não aprovados. */
+export async function updateStyleAction(form: FormData) {
+  const id = str(form, "id", 40);
+  const framing = str(form, "framing", 10) as Framing;
+  if (!isDbConfigured() || !UUID.test(id) || !FRAMINGS.includes(framing)) return;
+  await updateSource(id, { framing, captions: form.get("captions") === "on", use_logo: form.get("use_logo") === "on", status: "rendering" });
+  for (const clip of await listClips(id)) {
+    if (clip.status !== "approved") await updateClip(clip.id, { status: "pending" });
+  }
+  revalidatePath(`/painel/cortes/${id}`);
+}
+
+/** Edita o texto do topo e renderiza o corte de novo. */
+export async function updateHookAction(form: FormData) {
+  const id = str(form, "id", 40);
+  const hook = str(form, "hook", 80);
+  if (!isDbConfigured() || !UUID.test(id)) return;
+  const clip = await getClip(id);
+  if (!clip || clip.status === "approved") return;
+  await updateClip(id, { hook, status: "pending" });
+  revalidatePath(`/painel/cortes/${clip.source_id}`);
+}
+
+/** Aprova o corte: ele vira um vídeo pronto e a Agenda posta no próximo horário. */
+export async function approveClipAction(form: FormData) {
+  const id = str(form, "id", 40);
+  if (!isDbConfigured() || !UUID.test(id)) return;
+  const clip = await getClip(id);
+  if (!clip || clip.status !== "rendered" || !clip.local_path) return;
+  const source = await getSource(clip.source_id);
+  if (!source) return;
+  const video = await createReadyVideo({
+    accountId: source.account_id,
+    reference: source.reference_title ? { title: source.reference_title, niche: source.niche ?? undefined } : null,
+    title: clip.hook || source.title.slice(0, 90),
+    description: `${clip.hook}\n\n#shorts`.trim(),
+    localPath: clip.local_path,
+    duration: Number(clip.end_seconds) - Number(clip.start_seconds),
+  });
+  await updateClip(id, { status: "approved", video_id: video.id });
+  revalidatePath(`/painel/cortes/${source.id}`);
+}
