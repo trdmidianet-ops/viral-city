@@ -1,6 +1,6 @@
 import { KeyRound, SearchX, TrendingUp } from "lucide-react";
 import { EmptyState, PageHeader } from "@/components/painel-ui";
-import { platforms } from "@/components/platform-icons";
+import { activePlatforms } from "@/components/platform-icons";
 import { parseFilters } from "@/lib/youtube/niches";
 import { fetchTrending, type TrendResult } from "@/lib/youtube/trending";
 import { TrendFiltersForm } from "./filters";
@@ -21,7 +21,7 @@ export default async function TendenciasPage({
       <PageHeader title="Tendências" subtitle="Os vídeos mais vistos por nicho, país e formato." />
 
       <div className="mb-4 flex gap-2 overflow-x-auto" role="tablist" aria-label="Plataforma">
-        {platforms.map(({ id, name, Icon, color }) => {
+        {activePlatforms.map(({ id, name, Icon, color }) => {
           const active = id === "youtube";
           return (
             <span

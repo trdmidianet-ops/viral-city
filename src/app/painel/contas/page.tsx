@@ -1,6 +1,6 @@
 import { CheckCircle2, Plus, TriangleAlert, Unplug } from "lucide-react";
 import { PageHeader } from "@/components/painel-ui";
-import { platforms } from "@/components/platform-icons";
+import { activePlatforms } from "@/components/platform-icons";
 import { canStoreAccounts, listAccounts, type Account } from "@/lib/accounts/store";
 import { appUrl, isConfigured, providers, redirectUri } from "@/lib/oauth/providers";
 import { disconnectAccount } from "./actions";
@@ -43,7 +43,7 @@ export default async function ContasPage({
       )}
 
       <div className="space-y-6">
-        {platforms.map(({ id, name, Icon, color }) => {
+        {activePlatforms.map(({ id, name, Icon, color }) => {
           const provider = providers[id];
           const configured = isConfigured(provider);
           const list = accounts.filter((a) => a.platform === id);

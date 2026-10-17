@@ -49,3 +49,7 @@ export const platforms = [
   { id: "tiktok", name: "TikTok", Icon: TiktokIcon, color: "text-cyan" },
   { id: "instagram", name: "Instagram", Icon: InstagramIcon, color: "text-pink" },
 ] as const;
+
+/** Redes visíveis no painel. TikTok e Instagram ficam escondidos até decidirmos ativá-los. */
+const ACTIVE = ["youtube"];
+export const activePlatforms = platforms.filter((p) => ACTIVE.includes(p.id));

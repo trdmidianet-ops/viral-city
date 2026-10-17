@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { CalendarClock, Clapperboard, TrendingUp, Users } from "lucide-react";
 import { PageHeader } from "@/components/painel-ui";
-import { platforms } from "@/components/platform-icons";
+import { activePlatforms } from "@/components/platform-icons";
 
 const stats = [
   { label: "Contas conectadas", value: "0", icon: Users },
@@ -38,7 +38,7 @@ export default function PainelHome() {
           <h2 className="font-semibold">Comece por aqui</h2>
           <p className="mt-1 text-sm text-muted">Conecte suas contas para a cidade começar a trabalhar.</p>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            {platforms.map(({ id, name, Icon, color }) => (
+            {activePlatforms.map(({ id, name, Icon, color }) => (
               <Link
                 key={id}
                 href="/painel/contas"
