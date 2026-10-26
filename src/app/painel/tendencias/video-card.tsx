@@ -12,7 +12,7 @@ export function VideoCard({ video, rank, niche }: { video: TrendVideo; rank: num
         {video.thumbnail && (
           <Image src={video.thumbnail} alt="" fill sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" className="object-cover" />
         )}
-        <span className="absolute left-2 top-2 rounded-md bg-gradient-to-br from-pink to-orange px-2 py-0.5 font-display text-sm text-white">
+        <span className="absolute left-2 top-2 rounded-md bg-gradient-to-br from-pink to-orange px-2 py-0.5 num font-heading text-sm font-semibold text-white">
           #{rank}
         </span>
         <span className="absolute bottom-2 right-2 rounded bg-black/75 px-1.5 py-0.5 text-xs">

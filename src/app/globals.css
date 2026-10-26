@@ -28,11 +28,30 @@
   --color-muted: var(--muted);
   --color-line: var(--line);
   --font-sans: var(--font-body);
-  --font-display: var(--font-display);
+  --font-heading: var(--font-heading);
+  --font-serif: var(--font-serif);
+  --font-logo: var(--font-logo);
+  --font-mono: var(--font-code);
 }
 
 html {
   scroll-behavior: smooth;
+}
+
+/* Títulos em grotesca com espaçamento apertado e números alinhados, como no resend.com */
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading), system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+  table,
+  time,
+  .num {
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 body {

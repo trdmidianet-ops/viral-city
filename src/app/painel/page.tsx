@@ -27,7 +27,7 @@ export default function PainelHome() {
         {stats.map(({ label, value, icon: Icon }) => (
           <div key={label} className="glass rounded-2xl p-5">
             <Icon size={18} className="text-orange" />
-            <p className="mt-3 font-display text-3xl">{value}</p>
+            <p className="num mt-3 font-heading text-4xl font-medium tracking-[-0.03em]">{value}</p>
             <p className="text-xs text-muted">{label}</p>
           </div>
         ))}

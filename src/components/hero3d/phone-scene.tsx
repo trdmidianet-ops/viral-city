@@ -36,7 +36,7 @@ const RESET = 10.2;
 function fonts() {
   const css = getComputedStyle(document.body);
   return {
-    display: css.getPropertyValue("--font-display").trim() || "Impact, sans-serif",
+    display: css.getPropertyValue("--font-heading").trim() || "system-ui, sans-serif",
     body: css.getPropertyValue("--font-body").trim() || "system-ui, sans-serif",
   };
 }
@@ -106,7 +106,7 @@ function segmentTexture(i: number, scored: boolean, f: ReturnType<typeof fonts>)
     ctx.beginPath();
     ctx.roundRect(150, 34, 96, 40, 20);
     ctx.fill();
-    ctx.font = `28px ${f.display}`;
+    ctx.font = `800 28px ${f.display}`;
     ctx.fillStyle = "#ffd166";
     ctx.fillText(`★${clip.score}`, 160, 66);
     ctx.strokeStyle = "#ffd166";
@@ -153,7 +153,7 @@ function drawScreen(ctx: CanvasRenderingContext2D, t: number, f: ReturnType<type
   if (t >= DONE) {
     // resumo: cortes prontos e agendados
     gradient(ctx, W, H, "#140a2a", "#2a0f4a");
-    ctx.font = `44px ${f.display}`;
+    ctx.font = `800 44px ${f.display}`;
     ctx.fillStyle = "#ffd166";
     ctx.fillText("5 CORTES", 36, 170);
     ctx.fillStyle = "#f6eefe";
@@ -170,7 +170,7 @@ function drawScreen(ctx: CanvasRenderingContext2D, t: number, f: ReturnType<type
       ctx.font = `600 20px ${f.body}`;
       ctx.fillStyle = "#f6eefe";
       ctx.fillText(clip.hook.slice(0, 18), 104, y + 30);
-      ctx.font = `22px ${f.display}`;
+      ctx.font = `800 22px ${f.display}`;
       ctx.fillStyle = "#ffd166";
       ctx.fillText(`★ ${clip.score}`, 104, y + 60);
     });
@@ -208,11 +208,11 @@ function drawScreen(ctx: CanvasRenderingContext2D, t: number, f: ReturnType<type
     ctx.beginPath();
     ctx.roundRect(W - 150, 38, 120, 48, 24);
     ctx.fill();
-    ctx.font = `28px ${f.display}`;
+    ctx.font = `800 28px ${f.display}`;
     ctx.fillStyle = "#ffd166";
     ctx.fillText(`★${clip.score}`, W - 136, 74);
 
-    ctx.font = `46px ${f.display}`;
+    ctx.font = `800 46px ${f.display}`;
     ctx.textAlign = "center";
     ctx.lineJoin = "round";
     ctx.lineWidth = 10;
@@ -228,7 +228,7 @@ function drawScreen(ctx: CanvasRenderingContext2D, t: number, f: ReturnType<type
 
   // vídeo longo chegando: transcrição e análise da IA
   gradient(ctx, W, H, "#0b0618", "#1e1140");
-  ctx.font = `30px ${f.display}`;
+  ctx.font = `800 30px ${f.display}`;
   ctx.fillStyle = "#f6eefe";
   ctx.fillText("VÍDEO LONGO", 36, 150);
   ctx.font = `600 22px ${f.body}`;
@@ -245,7 +245,7 @@ function drawScreen(ctx: CanvasRenderingContext2D, t: number, f: ReturnType<type
   ctx.fillText(cutting ? "A IA está escolhendo" : "Transcrevendo a fala…", 36, 470);
   if (cutting) ctx.fillText("os melhores momentos…", 36, 500);
   bar(ctx, 36, 530, W - 72, cutting ? span(t, 1.2, 3.2) : span(t, 0, 1.2), cutting ? "#22d3ee" : "#ff2e88");
-  ctx.font = `30px ${f.display}`;
+  ctx.font = `800 30px ${f.display}`;
   ctx.fillStyle = "#ffd166";
   CLIPS.forEach((clip, i) => {
     if (bladeX(t) > (i - 2) * SEG_W) ctx.fillText(`★${clip.score}`, 36 + (i % 3) * 112, 610 + Math.floor(i / 3) * 52);

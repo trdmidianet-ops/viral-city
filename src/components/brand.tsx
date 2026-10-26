@@ -71,7 +71,7 @@ export function Logo({ href = "/" }: { href?: string }) {
   return (
     <Link href={href} className="flex items-center gap-2.5" aria-label="Viral City — início">
       <LogoMark size={40} />
-      <span className="font-display text-lg leading-none tracking-wide">
+      <span className="font-logo text-lg leading-none tracking-wide">
         <span className="text-sunset">VIRAL</span>{" "}
         <span className="text-ink [text-shadow:0_0_10px_rgba(255,46,136,0.65)]">CITY</span>
       </span>

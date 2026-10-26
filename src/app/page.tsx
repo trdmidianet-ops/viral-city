@@ -121,9 +121,9 @@ export default function Home() {
             <span className="glass inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium uppercase tracking-widest text-sun">
               <Flame size={14} /> Bem-vindo à cidade dos virais
             </span>
-            <h1 className="mt-6 font-display text-4xl leading-[1.05] sm:text-6xl md:text-7xl">
-              <span className="text-sunset">Um vídeo longo,</span>{" "}
-              <span className="text-neon">5 Shorts virais</span>
+            <h1 className="mt-6 font-serif text-5xl leading-[1] tracking-[-0.01em] sm:text-7xl md:text-8xl">
+              <span className="text-sunset pr-1">Um vídeo longo,</span>{" "}
+              <span className="text-neon italic">5 Shorts virais</span>
             </h1>
             <p className="mx-auto mt-5 max-w-xl text-base text-ink [text-shadow:0_2px_12px_rgba(11,6,24,0.95)] sm:text-lg lg:mx-0">
               A IA encontra os melhores momentos do seu vídeo, dá nota para cada corte, coloca
@@ -151,13 +151,13 @@ export default function Home() {
       {/* COMO FUNCIONA */}
       <section id="como-funciona" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24">
         <p className="text-center text-sm font-semibold uppercase tracking-widest text-pink">Como funciona</p>
-        <h2 className="mt-3 text-center font-display text-3xl sm:text-4xl">
+        <h2 className="mt-3 text-center font-heading text-3xl font-medium tracking-[-0.04em] sm:text-5xl">
           Do vídeo longo ao Short, <span className="text-sunset">em 3 passos</span>
         </h2>
         <div className="mt-12 grid gap-5 md:grid-cols-3">
           {steps.map((s, i) => (
             <article key={s.title} className="glass relative rounded-2xl p-6">
-              <span className="absolute right-5 top-4 font-display text-4xl text-white/5">0{i + 1}</span>
+              <span className="absolute right-5 top-4 font-heading text-4xl font-semibold text-white/5">0{i + 1}</span>
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-pink to-orange">
                 <s.icon size={22} />
               </div>
@@ -172,7 +172,7 @@ export default function Home() {
       <section id="recursos" className="relative scroll-mt-20 border-y border-line bg-night-2/60 py-24">
         <div className="mx-auto max-w-6xl px-4">
           <p className="text-center text-sm font-semibold uppercase tracking-widest text-cyan">Recursos</p>
-          <h2 className="mt-3 text-center font-display text-3xl sm:text-4xl">
+          <h2 className="mt-3 text-center font-heading text-3xl font-medium tracking-[-0.04em] sm:text-5xl">
             Tudo para <span className="text-sunset">viralizar</span>
           </h2>
           <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
@@ -189,7 +189,7 @@ export default function Home() {
 
       {/* FAQ */}
       <section id="faq" className="mx-auto max-w-3xl scroll-mt-20 px-4 py-24">
-        <h2 className="text-center font-display text-3xl sm:text-4xl">Perguntas frequentes</h2>
+        <h2 className="text-center font-heading text-3xl font-medium tracking-[-0.04em] sm:text-5xl">Perguntas frequentes</h2>
         <div className="mt-10 space-y-3">
           {faqs.map((f) => (
             <details key={f.q} className="glass group rounded-xl px-5 py-4">
@@ -207,7 +207,7 @@ export default function Home() {
       <section className="px-4 pb-24">
         <div className="relative mx-auto max-w-4xl overflow-hidden rounded-3xl bg-gradient-to-br from-purple via-pink to-orange p-px">
           <div className="rounded-3xl bg-night-2 px-6 py-14 text-center">
-            <h2 className="font-display text-3xl sm:text-4xl">
+            <h2 className="font-heading text-3xl font-medium tracking-[-0.04em] sm:text-5xl">
               A cidade está <span className="text-sunset">esperando</span>
             </h2>
             <p className="mx-auto mt-4 max-w-md text-muted">

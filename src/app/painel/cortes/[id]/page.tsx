@@ -148,7 +148,7 @@ function ClipCard({ clip, local }: { clip: Clip; local: boolean }) {
         <div>
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-1 text-muted"><Sparkles size={12} /> Potencial viral</span>
-            <span className="font-display text-base text-orange">{clip.score}</span>
+            <span className="num font-heading text-base font-semibold text-orange">{clip.score}</span>
           </div>
           <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-white/10" role="meter" aria-valuenow={clip.score} aria-valuemin={0} aria-valuemax={100} aria-label="Potencial viral">
             <div className="h-full bg-gradient-to-r from-pink to-orange" style={{ width: `${clip.score}%` }} />

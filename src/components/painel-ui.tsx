@@ -4,7 +4,7 @@ export function PageHeader({ title, subtitle, phase }: { title: string; subtitle
   return (
     <div className="mb-8 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 className="font-display text-2xl sm:text-3xl">{title}</h1>
+        <h1 className="font-serif text-4xl leading-none tracking-[-0.01em] sm:text-5xl">{title}</h1>
         <p className="mt-1 text-sm text-muted">{subtitle}</p>
       </div>
       {phase && (
@@ -32,7 +32,7 @@ export function EmptyState({
       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-pink/30 to-purple/30">
         <Icon className="text-pink" size={26} />
       </div>
-      <h2 className="mt-5 text-lg font-semibold">{title}</h2>
+      <h2 className="mt-5 text-lg font-medium">{title}</h2>
       <p className="mt-2 max-w-md text-sm text-muted">{text}</p>
       {children && <div className="mt-6">{children}</div>}
     </div>

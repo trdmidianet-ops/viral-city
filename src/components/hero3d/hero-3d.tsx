@@ -60,8 +60,8 @@ function PhoneFallback() {
   return (
     <div className="flex h-full items-center justify-center">
       <div className="flex aspect-[9/19] h-[85%] flex-col justify-end rounded-[2.2rem] border-4 border-pink bg-gradient-to-br from-pink to-orange p-5 shadow-[0_0_60px_rgba(255,46,136,0.5)]">
-        <span className="font-display text-xl leading-tight text-white">5 CORTES PRONTOS</span>
-        <span className="mt-2 font-display text-sun">★ 9.4</span>
+        <span className="font-heading text-xl font-extrabold leading-tight tracking-tight text-white">5 CORTES PRONTOS</span>
+        <span className="num mt-2 font-heading font-bold text-sun">★ 9.4</span>
       </div>
     </div>
   );
