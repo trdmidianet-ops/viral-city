@@ -1,84 +1,87 @@
 import Link from "next/link";
 import {
   CalendarClock,
+  Captions,
+  Crop,
   Flame,
-  Layers,
-  Link2,
   Radar,
-  Sparkles,
-  Wand2,
+  Scissors,
   ShieldCheck,
+  Star,
+  Upload,
 } from "lucide-react";
-import { Logo, SunsetScene } from "@/components/brand";
-import { InstagramIcon, TiktokIcon, YoutubeIcon } from "@/components/platform-icons";
+import { Logo } from "@/components/brand";
+import { SunsetScene } from "@/components/sunset-scene";
+import { HeroCity, HeroPhone } from "@/components/hero3d/hero-3d";
+import { YoutubeIcon } from "@/components/platform-icons";
 
 const steps = [
   {
-    icon: Radar,
-    title: "Radar de virais",
-    text: "Vemos os vídeos mais assistidos por nicho e país em cada plataforma.",
+    icon: Upload,
+    title: "Mande o vídeo longo",
+    text: "Escolha um vídeo do seu canal, suba um arquivo do PC ou cole o link de um material autorizado.",
   },
   {
-    icon: Wand2,
-    title: "IA recria do zero",
-    text: "O viral vira referência: gancho, ritmo e formato. O vídeo novo é 100% original.",
+    icon: Scissors,
+    title: "A IA escolhe 5 cortes",
+    text: "Ela transcreve a fala, encontra os ganchos mais fortes e dá uma nota viral para cada trecho.",
   },
   {
     icon: CalendarClock,
-    title: "Posta sozinho",
-    text: "Você define dias e horários por conta e a fila publica no automático.",
+    title: "Aprove e agende",
+    text: "Você aprova os cortes e a agenda posta no YouTube Shorts nos dias e horários que escolher.",
   },
 ];
 
 const features = [
   {
-    icon: Flame,
-    title: "Ranking por nicho",
-    text: "Games, finanças, humor, fitness, curiosidades… veja o que está explodindo agora, por região.",
+    icon: Star,
+    title: "Nota viral em cada corte",
+    text: "Cada trecho vem com nota e o motivo da escolha, para você publicar primeiro o que tem mais chance.",
   },
   {
-    icon: Layers,
-    title: "Várias contas ao mesmo tempo",
-    text: "Conecte quantos canais e perfis quiser no YouTube, TikTok e Instagram e gerencie tudo num painel.",
+    icon: Crop,
+    title: "Vertical 9:16 sem esforço",
+    text: "Enquadramento com fundo desfocado, centralizado ou tela dividida, pronto para Shorts.",
   },
   {
-    icon: Sparkles,
-    title: "Vídeos originais com IA",
-    text: "Roteiro, narração, legendas animadas e cortes verticais 9:16 gerados a partir do padrão viral.",
+    icon: Captions,
+    title: "Legendas e sua logo",
+    text: "Legendas automáticas palavra por palavra, texto de gancho no topo e a logo do seu canal.",
+  },
+  {
+    icon: Radar,
+    title: "Radar de tendências",
+    text: "Veja os Shorts que estão bombando no seu nicho e use os ganchos como inspiração para os cortes.",
   },
   {
     icon: CalendarClock,
     title: "Agenda autônoma",
-    text: "Grade semanal por conta: escolha os dias e horários e a Viral City faz o resto.",
-  },
-  {
-    icon: Link2,
-    title: "APIs oficiais",
-    text: "Conexão via OAuth oficial de cada rede, sem senha guardada e sem risco de bot.",
+    text: "Grade semanal por canal: os cortes aprovados entram na fila e saem no horário certo.",
   },
   {
     icon: ShieldCheck,
-    title: "Seguro para monetizar",
-    text: "Sem reupload de conteúdo alheio: tudo que sai daqui é original e elegível a programas de criadores.",
+    title: "Seu conteúdo, conexão oficial",
+    text: "Login oficial do Google, sem senha guardada. Só cortamos vídeos seus ou com autorização.",
   },
 ];
 
 const faqs = [
   {
-    q: "A Viral City baixa e reposta vídeos de outras pessoas?",
-    a: "Não. Os virais servem de referência de formato. A IA cria um vídeo novo e original, o que protege suas contas contra strikes e mantém a monetização.",
+    q: "Posso cortar vídeos de outros canais?",
+    a: "Não. A Viral City corta apenas vídeos do seu próprio canal ou materiais que você tem autorização para usar. As tendências servem só de inspiração para ganchos e formatos.",
   },
   {
     q: "Em quais redes posso publicar?",
-    a: "YouTube (Shorts), TikTok e Instagram (Reels), com várias contas por rede.",
+    a: "Por enquanto, YouTube Shorts, com vários canais na mesma conta. TikTok e Instagram estão a caminho.",
   },
   {
     q: "Preciso saber editar?",
-    a: "Não. Você escolhe o nicho e os horários; roteiro, narração, legendas e cortes são automáticos.",
+    a: "Não. A IA escolhe os trechos, enquadra em 9:16 e coloca legendas. Você só revisa, aprova e escolhe os horários.",
   },
   {
-    q: "Quando posso conectar minhas contas?",
-    a: "A conexão de contas entra na próxima fase do produto. Crie sua conta agora para acessar o painel.",
+    q: "Que tipo de vídeo funciona melhor?",
+    a: "Vídeos longos com bastante fala: podcasts, aulas, lives, entrevistas e vlogs. A IA usa a transcrição para achar os melhores momentos.",
   },
 ];
 
@@ -105,32 +108,42 @@ export default function Home() {
       </header>
 
       {/* HERO */}
-      <section className="relative flex min-h-[100svh] items-start justify-center pt-28">
+      <section className="relative flex min-h-[100svh] items-center overflow-hidden pb-12 pt-24">
         <SunsetScene />
-        <div className="relative z-10 mx-auto max-w-3xl px-4 text-center">
-          <span className="glass inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium uppercase tracking-widest text-sun">
-            <Flame size={14} /> Bem-vindo à cidade dos virais
-          </span>
-          <h1 className="mt-6 font-display text-4xl leading-[1.05] sm:text-6xl md:text-7xl">
-            <span className="text-sunset">Domine</span>{" "}
-            <span className="text-neon">os virais</span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-xl text-base text-ink [text-shadow:0_2px_12px_rgba(11,6,24,0.95)] sm:text-lg">
-            Descubra o que está bombando por nicho, crie vídeos originais com IA e poste no
-            YouTube, TikTok e Instagram no piloto automático.
-          </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link href="/login?modo=cadastro" className="btn-sunset w-full rounded-full px-7 py-3.5 font-semibold text-white sm:w-auto">
-              Entrar na cidade
-            </Link>
-            <a href="#como-funciona" className="glass w-full rounded-full px-7 py-3.5 font-medium sm:w-auto">
-              Ver como funciona
-            </a>
+        <HeroCity />
+        {/* escurece o lado do texto para manter a leitura sobre a cidade */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(11,6,24,0.55),transparent_35%,transparent_70%,rgba(11,6,24,0.9)),radial-gradient(ellipse_at_22%_50%,rgba(11,6,24,0.8),transparent_65%)]"
+        />
+        <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-6 px-4 lg:grid-cols-[1.1fr_1fr]">
+          <div className="text-center lg:text-left">
+            <span className="glass inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium uppercase tracking-widest text-sun">
+              <Flame size={14} /> Bem-vindo à cidade dos virais
+            </span>
+            <h1 className="mt-6 font-display text-4xl leading-[1.05] sm:text-6xl md:text-7xl">
+              <span className="text-sunset">Um vídeo longo,</span>{" "}
+              <span className="text-neon">5 Shorts virais</span>
+            </h1>
+            <p className="mx-auto mt-5 max-w-xl text-base text-ink [text-shadow:0_2px_12px_rgba(11,6,24,0.95)] sm:text-lg lg:mx-0">
+              A IA encontra os melhores momentos do seu vídeo, dá nota para cada corte, coloca
+              legenda e enquadra em 9:16. Você aprova e a Viral City posta no seu canal do
+              YouTube no horário certo.
+            </p>
+            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
+              <Link href="/login?modo=cadastro" className="btn-sunset w-full rounded-full px-7 py-3.5 font-semibold text-white sm:w-auto">
+                Entrar na cidade
+              </Link>
+              <a href="#como-funciona" className="glass w-full rounded-full px-7 py-3.5 font-medium sm:w-auto">
+                Ver como funciona
+              </a>
+            </div>
+            <p className="mt-8 flex items-center justify-center gap-2 text-sm text-ink/70 lg:justify-start">
+              <YoutubeIcon aria-hidden="true" /> Feito para YouTube Shorts
+            </p>
           </div>
-          <div className="mt-8 flex items-center justify-center gap-5 text-ink/70">
-            <YoutubeIcon aria-label="YouTube" />
-            <TiktokIcon aria-label="TikTok" />
-            <InstagramIcon aria-label="Instagram" />
+          <div className="h-[440px] sm:h-[520px] lg:h-[600px]">
+            <HeroPhone />
           </div>
         </div>
       </section>
@@ -139,7 +152,7 @@ export default function Home() {
       <section id="como-funciona" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24">
         <p className="text-center text-sm font-semibold uppercase tracking-widest text-pink">Como funciona</p>
         <h2 className="mt-3 text-center font-display text-3xl sm:text-4xl">
-          Do radar ao post, <span className="text-sunset">em 3 passos</span>
+          Do vídeo longo ao Short, <span className="text-sunset">em 3 passos</span>
         </h2>
         <div className="mt-12 grid gap-5 md:grid-cols-3">
           {steps.map((s, i) => (
@@ -198,7 +211,7 @@ export default function Home() {
               A cidade está <span className="text-sunset">esperando</span>
             </h2>
             <p className="mx-auto mt-4 max-w-md text-muted">
-              Crie sua conta e comece a montar sua máquina de vídeos virais.
+              Crie sua conta e transforme seu próximo vídeo longo em uma semana de Shorts.
             </p>
             <Link href="/login?modo=cadastro" className="btn-sunset mt-8 inline-block rounded-full px-8 py-3.5 font-semibold text-white">
               Criar conta grátis

@@ -90,8 +90,20 @@ body {
   }
 }
 
+/* luzes de antena e estrelas piscando no cenário */
+.vc-blink {
+  animation: vc-blink 2.4s ease-in-out infinite;
+}
+
+@keyframes vc-blink {
+  50% {
+    opacity: 0.15;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .retro-grid {
+  .retro-grid,
+  .vc-blink {
     animation: none;
   }
 }

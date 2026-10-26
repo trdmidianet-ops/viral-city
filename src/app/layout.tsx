@@ -14,9 +14,9 @@ const body = Rubik({
 });
 
 export const metadata: Metadata = {
-  title: "Viral City — vídeos virais no piloto automático",
+  title: "Viral City — cortes virais do seu vídeo longo",
   description:
-    "Descubra os vídeos mais vistos por nicho, crie versões originais com IA e poste automaticamente no YouTube, TikTok e Instagram.",
+    "A IA transforma seu vídeo longo em 5 Shorts com nota viral, legendas e enquadramento 9:16, e posta no seu canal do YouTube no horário certo.",
 };
 
 export default function RootLayout({
