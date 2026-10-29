@@ -63,7 +63,8 @@ function Floor({ speed }: { speed: number }) {
             return 1.0 - smoothstep(0.0, fwidth(v) * 1.5, f);
           }
           void main() {
-            vec2 p = vec2(vWorld.x, vWorld.z + uOffset);
+            // a grade anda junto com os prédios, em direção à câmera (+z)
+            vec2 p = vec2(vWorld.x, vWorld.z - uOffset);
             vec3 col = vec3(0.07, 0.024, 0.16);
             float g = max(gridLine(p.x, 4.0), gridLine(p.y, 4.0));
             col = mix(col, vec3(1.0, 0.18, 0.53), g * 0.8);
