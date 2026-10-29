@@ -4,11 +4,14 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { announceIntroDone } from "./intro";
+import { Sky } from "./sky";
 import { seeded, useInView, useWindowPointer } from "./pointer";
 
 /**
- * Avenida neon em 3D: a câmera "dirige" rumo ao pôr do sol entre prédios,
- * palmeiras e outdoors verticais passando Shorts. Tudo gerado em código, sem assets.
+ * Avenida neon em 3D: a página abre com um voo de drone sobre a cidade que desce e entra
+ * na avenida; depois a câmera "dirige" rumo ao pôr do sol entre prédios, palmeiras e
+ * outdoors verticais passando Shorts. Tudo gerado em código, sem assets.
  */
 
 const FOG = "#4a1752";
@@ -17,65 +20,25 @@ const COPIES = 4; // cópias do trecho, para o fim da avenida nunca aparecer
 const SPEED = 7; // unidades por segundo
 const FOG_NEAR = 30;
 const FOG_FAR = 190;
+const INTRO_SECONDS = 6.5;
+
+// Névoa compartilhada por todos os materiais: no voo alto ela se afasta junto com a câmera
+const fogUniforms = {
+  // valores crus (sem conversão de cor), iguais ao horizonte do céu: o chão some na névoa sem emenda
+  uFog: { value: new THREE.Vector3(0.13, 0.04, 0.18) },
+  uFogNear: { value: FOG_NEAR },
+  uFogFar: { value: FOG_FAR },
+};
 
 const fogChunk = /* glsl */ `
   uniform vec3 uFog;
+  uniform float uFogNear;
+  uniform float uFogFar;
   vec3 applyFog(vec3 col, vec3 world) {
     float d = length(world - cameraPosition);
-    return mix(col, uFog, smoothstep(${FOG_NEAR.toFixed(1)}, ${FOG_FAR.toFixed(1)}, d));
+    return mix(col, uFog, smoothstep(uFogNear, uFogFar, d));
   }
 `;
-
-// ---------- céu + sol ----------
-
-function Sky() {
-  const material = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        depthWrite: false,
-        uniforms: { uTime: { value: 0 } },
-        vertexShader: /* glsl */ `
-          varying vec3 vWorld;
-          void main() {
-            vec4 w = modelMatrix * vec4(position, 1.0);
-            vWorld = w.xyz;
-            gl_Position = projectionMatrix * viewMatrix * w;
-          }`,
-        fragmentShader: /* glsl */ `
-          uniform float uTime;
-          varying vec3 vWorld;
-          void main() {
-            float y = vWorld.y;
-            vec3 col = mix(vec3(0.29, 0.09, 0.32), vec3(0.16, 0.06, 0.29), smoothstep(0.0, 120.0, y));
-            col = mix(col, vec3(0.043, 0.024, 0.094), smoothstep(110.0, 260.0, y));
-
-            vec2 c = vec2(0.0, 36.0);
-            float r = 108.0;
-            float d = length(vWorld.xy - c);
-            // brilho em volta do sol
-            col += vec3(1.0, 0.18, 0.53) * 0.55 * exp(-max(d - r, 0.0) / 55.0);
-
-            float t = clamp((y - (c.y - r)) / (2.0 * r), 0.0, 1.0);
-            vec3 sun = mix(vec3(1.0, 0.18, 0.53), vec3(1.0, 0.54, 0.24), smoothstep(0.0, 0.55, t));
-            sun = mix(sun, vec3(1.0, 0.82, 0.4), smoothstep(0.55, 1.0, t));
-            // listras na metade de baixo, que engrossam perto do horizonte
-            float below = clamp((c.y - y) / r, 0.0, 1.0);
-            float bands = fract((y - uTime * 2.0) / 9.0);
-            float gap = step(bands, below * 0.55) * step(0.02, below);
-            float inside = smoothstep(r + 0.6, r - 0.6, d);
-            col = mix(col, sun, inside * (1.0 - gap));
-            gl_FragColor = vec4(col, 1.0);
-          }`,
-      }),
-    [],
-  );
-  useFrame((_, dt) => (material.uniforms.uTime.value += dt));
-  return (
-    <mesh position={[0, 80, -420]} material={material}>
-      <planeGeometry args={[1400, 600]} />
-    </mesh>
-  );
-}
 
 // ---------- chão com grade ----------
 
@@ -83,7 +46,7 @@ function Floor({ speed }: { speed: number }) {
   const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
-        uniforms: { uOffset: { value: 0 }, uFog: { value: new THREE.Color(FOG) } },
+        uniforms: { uOffset: { value: 0 }, ...fogUniforms },
         vertexShader: /* glsl */ `
           varying vec3 vWorld;
           void main() {
@@ -119,7 +82,7 @@ function Floor({ speed }: { speed: number }) {
   useFrame(({ clock }) => (material.uniforms.uOffset.value = (clock.elapsedTime * speed) % 24));
   return (
     <mesh rotation-x={-Math.PI / 2} position={[0, 0, -300]} material={material}>
-      <planeGeometry args={[900, 900]} />
+      <planeGeometry args={[6000, 6000]} />
     </mesh>
   );
 }
@@ -162,6 +125,18 @@ function useCityLayout() {
         buildings.push({ x: side * (17 + w / 2 + rand() * 6), z: z - d / 2, w, d, h: 12 + rand() * 28, side });
         z -= d + 1 + rand() * 3;
       }
+      // quarteirões ao redor, que aparecem na vista aérea do drone
+      for (let x = 44; x < 210; ) {
+        const w = 6 + rand() * 6;
+        for (let z = -2; z > -PERIOD; ) {
+          const d = 6 + rand() * 5;
+          if (rand() > 0.15) {
+            buildings.push({ x: side * (x + w / 2), z: z - d / 2, w, d, h: 6 + rand() * rand() * 48, side });
+          }
+          z -= d + 3 + rand() * 3;
+        }
+        x += w + 4 + rand() * 4;
+      }
       for (let z = -4; z > -PERIOD; z -= 10) {
         palms.push({ x: side * (4.6 + rand() * 0.6), z: z - rand() * 2, s: 0.85 + rand() * 0.4, r: rand() * Math.PI * 2 });
       }
@@ -176,7 +151,7 @@ function Buildings({ items }: { items: Building[] }) {
   const material = useMemo(
     () =>
       new THREE.ShaderMaterial({
-        uniforms: { uFog: { value: new THREE.Color(FOG) } },
+        uniforms: { ...fogUniforms },
         vertexShader: /* glsl */ `
           varying vec3 vWorld;
           varying vec3 vLocal;
@@ -231,6 +206,13 @@ function Buildings({ items }: { items: Building[] }) {
               col = mix(col, neon, (1.0 - smoothstep(0.0, 0.12, across)) * step(0.66, tint) * 0.9);
               // faixas de andar
               col *= 1.0 - 0.3 * smoothstep(0.46, 0.5, abs(fract(vLocal.y / 5.0) - 0.5));
+            } else if (vN.y > 0.5) {
+              // telhado (o que o drone vê de cima): tom mais claro e contorno neon
+              float edge = min(vHalf.x - abs(vLocal.x - vCenter.x), vHalf.z - abs(vLocal.z - vCenter.z));
+              col = vec3(0.17, 0.07, 0.28);
+              col = mix(col, neon, (1.0 - smoothstep(0.0, 0.35, edge)) * 0.85);
+              // casa de máquinas/claraboia acesa em alguns telhados
+              col = mix(col, vec3(1.0, 0.78, 0.45), step(0.8, tint) * (1.0 - smoothstep(0.0, 0.25, max(abs(vLocal.x - vCenter.x), abs(vLocal.z - vCenter.z)) - min(vHalf.x, vHalf.z) * 0.35)) * 0.6);
             }
             gl_FragColor = vec4(applyFog(col, vWorld), 1.0);
           }`,
@@ -308,7 +290,7 @@ function Palms({ items }: { items: { x: number; z: number; s: number; r: number 
 
 const billboardMaterial = (hue: number) =>
   new THREE.ShaderMaterial({
-    uniforms: { uTime: { value: 0 }, uHue: { value: hue }, uFog: { value: new THREE.Color(FOG) } },
+    uniforms: { uTime: { value: 0 }, uHue: { value: hue }, ...fogUniforms },
     vertexShader: /* glsl */ `
       varying vec2 vUv;
       varying vec3 vWorld;
@@ -364,16 +346,66 @@ function Billboards({ items }: { items: Billboard[] }) {
 
 // ---------- montagem ----------
 
+const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+/** Trajeto do drone: do alto, de lado, desce em curva até a altura de quem está na rua. */
+const flightPath = new THREE.CatmullRomCurve3([
+  new THREE.Vector3(-90, 170, 110),
+  new THREE.Vector3(-45, 95, 45),
+  new THREE.Vector3(-2, 30, 22), // já sobre a avenida, acima das palmeiras e longe das fachadas
+  new THREE.Vector3(0, 2.2, 8),
+]);
+const flightLook = new THREE.CatmullRomCurve3([
+  new THREE.Vector3(20, 60, -260),
+  new THREE.Vector3(8, 4, -150),
+  new THREE.Vector3(0, 3, -80),
+  new THREE.Vector3(0, 4, -80),
+]);
+
 /** calm: com "reduzir movimento", a avenida anda mais devagar e a câmera não segue o mouse. */
 function City({ pointer, calm }: { pointer: React.RefObject<{ x: number; y: number }>; calm: boolean }) {
   const group = useRef<THREE.Group>(null);
   const layout = useCityLayout();
   const look = useMemo(() => new THREE.Vector3(), []);
+  const intro = useRef({ start: -1, announced: false });
+  const announce = () => {
+    if (intro.current.announced) return;
+    intro.current.announced = true;
+    announceIntroDone();
+  };
 
   const speed = calm ? SPEED * 0.4 : SPEED;
 
-  useFrame(({ camera, clock }, dt) => {
+  useFrame(({ camera, clock, scene }, dt) => {
     if (group.current) group.current.position.z = (clock.elapsedTime * speed) % PERIOD;
+
+    // voo de abertura (o relógio começa no primeiro quadro desenhado)
+    const now = clock.elapsedTime;
+    if (intro.current.start < 0) intro.current.start = now;
+    const t = Math.min(1, (now - intro.current.start) / INTRO_SECONDS);
+
+    if (t < 1) {
+      const u = ease(t);
+      flightPath.getPoint(u, camera.position);
+      camera.lookAt(flightLook.getPoint(u, look));
+      const height = camera.position.y - 2.2;
+      fogUniforms.uFogNear.value = FOG_NEAR + height * 1.2;
+      fogUniforms.uFogFar.value = FOG_FAR + height * 2.4;
+      if (scene.fog instanceof THREE.Fog) {
+        scene.fog.near = fogUniforms.uFogNear.value;
+        scene.fog.far = fogUniforms.uFogFar.value;
+      }
+      if (t > 0.72) announce();
+      return;
+    }
+    announce();
+    fogUniforms.uFogNear.value = FOG_NEAR;
+    fogUniforms.uFogFar.value = FOG_FAR;
+    if (scene.fog instanceof THREE.Fog) {
+      scene.fog.near = FOG_NEAR;
+      scene.fog.far = FOG_FAR;
+    }
+
     const p = calm ? { x: 0, y: 0 } : (pointer.current ?? { x: 0, y: 0 });
     const k = 1 - Math.exp(-dt * 2.5);
     camera.position.x += (p.x * 1.6 - camera.position.x) * k;
@@ -406,7 +438,7 @@ export default function CityScene({ onReady, calm = false }: { onReady?: () => v
         dpr={dpr}
         frameloop={visible ? "always" : "never"}
         gl={{ antialias: true, powerPreference: "high-performance" }}
-        camera={{ position: [0, 2.2, 8], fov: 55, near: 0.1, far: 900 }}
+        camera={{ position: [-90, 170, 110], fov: 55, near: 0.1, far: 2000 }}
         onCreated={() => requestAnimationFrame(() => onReady?.())}
       >
         <City pointer={pointer} calm={calm} />

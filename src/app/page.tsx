@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { SunsetScene } from "@/components/sunset-scene";
-import { HeroCity, HeroPhone } from "@/components/hero3d/hero-3d";
+import { HeroCity, HeroPhone, HeroReveal } from "@/components/hero3d/hero-3d";
 import { YoutubeIcon } from "@/components/platform-icons";
 
 const steps = [
@@ -109,15 +109,19 @@ export default function Home() {
 
       {/* HERO */}
       <section className="relative flex min-h-[100svh] items-center overflow-hidden pb-12 pt-24">
-        <SunsetScene />
+        <div className="vc-fallback-scene">
+          <SunsetScene />
+        </div>
         <HeroCity />
         {/* escurece o lado do texto para manter a leitura sobre a cidade */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(11,6,24,0.55),transparent_35%,transparent_70%,rgba(11,6,24,0.9)),radial-gradient(ellipse_at_22%_50%,rgba(11,6,24,0.8),transparent_65%)]"
-        />
+        <HeroReveal className="pointer-events-none absolute inset-0">
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-[linear-gradient(180deg,rgba(11,6,24,0.55),transparent_35%,transparent_70%,rgba(11,6,24,0.9)),radial-gradient(ellipse_at_22%_50%,rgba(11,6,24,0.8),transparent_65%)]"
+          />
+        </HeroReveal>
         <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-6 px-4 lg:grid-cols-[1.1fr_1fr]">
-          <div className="text-center lg:text-left">
+          <HeroReveal className="text-center lg:text-left">
             <span className="glass inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium uppercase tracking-widest text-sun">
               <Flame size={14} /> Bem-vindo à cidade dos virais
             </span>
@@ -141,10 +145,10 @@ export default function Home() {
             <p className="mt-8 flex items-center justify-center gap-2 text-sm text-ink/70 lg:justify-start">
               <YoutubeIcon aria-hidden="true" /> Feito para YouTube Shorts
             </p>
-          </div>
-          <div className="h-[440px] sm:h-[520px] lg:h-[600px]">
+          </HeroReveal>
+          <HeroReveal className="h-[440px] sm:h-[520px] lg:h-[600px]" delay={350}>
             <HeroPhone />
-          </div>
+          </HeroReveal>
         </div>
       </section>
 

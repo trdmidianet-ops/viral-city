@@ -109,6 +109,39 @@ body {
   }
 }
 
+/* Hero: o conteúdo entra depois do voo do drone (ver HeroReveal). A animação é uma
+   rede de segurança: aparece sozinho em 10 s mesmo se o JavaScript não rodar. */
+.vc-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.9s ease, transform 0.9s ease;
+  animation: vc-reveal-failsafe 0s linear 10s forwards;
+}
+.vc-reveal.is-shown {
+  opacity: 1;
+  transform: none;
+}
+@keyframes vc-reveal-failsafe {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* Em telas grandes a cidade 3D ocupa o hero desde o início; o SVG só volta sem 3D */
+@media (min-width: 768px) {
+  html:not(.vc-no-3d) .vc-fallback-scene {
+    display: none;
+  }
+}
+/* No celular não há voo: o conteúdo aparece direto */
+@media (max-width: 767px) {
+  .vc-reveal {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
+}
+
 /* luzes de antena e estrelas piscando no cenário */
 .vc-blink {
   animation: vc-blink 2.4s ease-in-out infinite;
