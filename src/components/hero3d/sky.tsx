@@ -45,8 +45,12 @@ export function Sky() {
             // listras na metade de baixo, que engrossam perto do horizonte
             float below = clamp((c.y - e) / r, 0.0, 1.0);
             float bands = fract((e - uTime * 0.005) / 0.021);
-            float gap = step(bands, below * 0.55) * step(0.02, below);
-            float inside = smoothstep(r + 0.002, r - 0.002, d);
+            // listras e borda do sol com antisserrilhado pela derivada de tela
+            float bw = fwidth(e / 0.021);
+            float th = below * 0.55;
+            float gap = (1.0 - smoothstep(th - bw, th + bw, bands)) * smoothstep(0.0, bw, bands) * step(0.02, below);
+            float fd = fwidth(d);
+            float inside = 1.0 - smoothstep(r - fd, r + fd, d);
             col = mix(col, sun, inside * (1.0 - gap) * step(0.0, e + 0.01));
             // abaixo do horizonte, a mesma cor da névoa: o chão some nela sem emenda
             col = mix(col, vec3(0.13, 0.04, 0.18), smoothstep(0.0, -0.02, e));

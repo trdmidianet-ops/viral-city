@@ -13,3 +13,21 @@ export function announceIntroDone() {
 }
 
 export const isIntroDone = () => Boolean((window as IntroWindow).__vcIntroDone);
+
+/**
+ * Como setTimeout, mas só conta o tempo com a aba visível (em segundo plano o navegador
+ * pausa a animação, então esperar ali não faz sentido). Devolve a função de limpeza.
+ */
+export function visibleTimeout(ms: number, fn: () => void): () => void {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const arm = () => {
+    clearTimeout(timer);
+    if (document.visibilityState === "visible") timer = setTimeout(fn, ms);
+  };
+  arm();
+  document.addEventListener("visibilitychange", arm);
+  return () => {
+    clearTimeout(timer);
+    document.removeEventListener("visibilitychange", arm);
+  };
+}

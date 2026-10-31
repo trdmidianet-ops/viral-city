@@ -5,6 +5,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { announceIntroDone } from "./intro";
+import { AdaptiveDpr, WarmUp } from "./perf";
 import { Sky } from "./sky";
 import { seeded, useInView, useWindowPointer } from "./pointer";
 
@@ -60,7 +61,10 @@ function Floor({ speed }: { speed: number }) {
           ${fogChunk}
           float gridLine(float v, float size) {
             float f = abs(fract(v / size - 0.5) - 0.5) * size;
-            return 1.0 - smoothstep(0.0, fwidth(v) * 1.5, f);
+            float w = fwidth(v);
+            float line = 1.0 - smoothstep(0.0, w * 1.5, f);
+            // ao longe as linhas ficam menores que um pixel: usa a média, sem moiré nem cintilar
+            return mix(line, 0.12, smoothstep(0.12, 0.45, w / size));
           }
           void main() {
             // a grade anda junto com os prédios, em direção à câmera (+z)
@@ -69,9 +73,13 @@ function Floor({ speed }: { speed: number }) {
             float g = max(gridLine(p.x, 4.0), gridLine(p.y, 4.0));
             col = mix(col, vec3(1.0, 0.18, 0.53), g * 0.8);
             // faixas laterais da avenida em ciano e faixa central tracejada
-            float edge = 1.0 - smoothstep(0.05, 0.18, abs(abs(vWorld.x) - 3.8));
+            float ew = fwidth(vWorld.x);
+            float edge = 1.0 - smoothstep(0.05, 0.18 + ew * 1.5, abs(abs(vWorld.x) - 3.8));
             col = mix(col, vec3(0.13, 0.83, 0.93), edge);
-            float dash = step(0.5, fract(p.y / 6.0)) * (1.0 - smoothstep(0.06, 0.14, abs(vWorld.x)));
+            // faixa tracejada com bordas suaves (onda triangular contínua, sem serrilhado)
+            float dw = fwidth(p.y / 6.0);
+            float dash = smoothstep(0.25 - dw, 0.25 + dw, abs(fract(p.y / 6.0 + 0.25) - 0.5));
+            dash = mix(dash, 0.5, smoothstep(0.15, 0.45, dw)) * (1.0 - smoothstep(0.06, 0.14 + ew * 1.5, abs(vWorld.x)));
             col = mix(col, vec3(1.0, 0.82, 0.4), dash * 0.9);
             // reflexo do sol no asfalto
             col += vec3(1.0, 0.3, 0.45) * 0.18 * exp(-abs(vWorld.x) / 10.0) * smoothstep(-20.0, -200.0, vWorld.z);
@@ -192,26 +200,34 @@ function Buildings({ items }: { items: Building[] }) {
             vec3 neon = tint > 0.66 ? vec3(0.13, 0.83, 0.93) : (tint > 0.33 ? vec3(1.0, 0.18, 0.53) : vec3(0.55, 0.24, 1.0));
             if (abs(vN.y) < 0.5) {
               vec2 uv = abs(vN.x) > 0.5 ? vec2(vLocal.z, vLocal.y) : vec2(vLocal.x, vLocal.y);
-              vec2 size = vec2(0.75, 0.95);
-              vec2 cell = floor(uv / size);
-              vec2 f = fract(uv / size);
-              float win = step(0.22, f.x) * step(f.x, 0.78) * step(0.28, f.y) * step(f.y, 0.72);
+              vec2 g = uv / vec2(0.75, 0.95);
+              vec2 cell = floor(g);
+              vec2 f = fract(g);
+              vec2 fw = fwidth(g);
+              // janela com borda suave (sem serrilhado)
+              vec2 lo = smoothstep(vec2(0.22, 0.28) - fw, vec2(0.22, 0.28) + fw, f);
+              vec2 hi = 1.0 - smoothstep(vec2(0.78, 0.72) - fw, vec2(0.78, 0.72) + fw, f);
+              float win = lo.x * lo.y * hi.x * hi.y;
               float h = hash(cell + vId * 17.13);
               vec3 wc = h > 0.93 ? vec3(0.13, 0.83, 0.93) : (h > 0.8 ? vec3(1.0, 0.18, 0.53) : vec3(1.0, 0.78, 0.45));
               col = mix(base, wc, win * step(0.66, h) * 0.7);
+              // longe demais (janela menor que um pixel): usa o brilho médio em vez de piscar
+              col = mix(col, mix(base, vec3(1.0, 0.72, 0.5), 0.07), smoothstep(0.3, 0.75, max(fw.x, fw.y)));
               // faixa neon no topo e brilho da rua na base
               col = mix(col, neon, (1.0 - smoothstep(0.0, 0.35, vTop - vLocal.y)) * step(0.4, tint));
               col += vec3(0.35, 0.06, 0.3) * 0.3 * (1.0 - smoothstep(0.0, 6.0, vLocal.y));
               // quinas com neon nos prédios de uma das cores
               float across = abs(vN.x) > 0.5 ? vHalf.z - abs(vLocal.z - vCenter.z) : vHalf.x - abs(vLocal.x - vCenter.x);
-              col = mix(col, neon, (1.0 - smoothstep(0.0, 0.12, across)) * step(0.66, tint) * 0.9);
+              float cw = max(0.12, fwidth(across) * 1.5);
+              col = mix(col, neon, (1.0 - smoothstep(0.0, cw, across)) * step(0.66, tint) * 0.9 * clamp(0.18 / cw, 0.35, 1.0));
               // faixas de andar
-              col *= 1.0 - 0.3 * smoothstep(0.46, 0.5, abs(fract(vLocal.y / 5.0) - 0.5));
+              float bw = fwidth(vLocal.y / 5.0);
+              col *= 1.0 - 0.3 * smoothstep(0.46 - bw, 0.5, abs(fract(vLocal.y / 5.0) - 0.5)) * (1.0 - smoothstep(0.03, 0.1, bw));
             } else if (vN.y > 0.5) {
               // telhado (o que o drone vê de cima): tom mais claro e contorno neon
               float edge = min(vHalf.x - abs(vLocal.x - vCenter.x), vHalf.z - abs(vLocal.z - vCenter.z));
               col = vec3(0.17, 0.07, 0.28);
-              col = mix(col, neon, (1.0 - smoothstep(0.0, 0.35, edge)) * 0.85);
+              col = mix(col, neon, (1.0 - smoothstep(0.0, max(0.35, fwidth(edge) * 1.5), edge)) * 0.85);
               // casa de máquinas/claraboia acesa em alguns telhados
               col = mix(col, vec3(1.0, 0.78, 0.45), step(0.8, tint) * (1.0 - smoothstep(0.0, 0.25, max(abs(vLocal.x - vCenter.x), abs(vLocal.z - vCenter.z)) - min(vHalf.x, vHalf.z) * 0.35)) * 0.6);
             }
@@ -318,8 +334,9 @@ const billboardMaterial = (hue: number) =>
         float bar = step(0.06, vUv.y) * step(vUv.y, 0.08) * step(0.08, vUv.x) * step(vUv.x, 0.08 + 0.84 * t);
         col = mix(col, vec3(1.0, 0.82, 0.4), bar);
         // moldura neon
-        float edge = max(step(vUv.x, 0.04) + step(0.96, vUv.x), step(vUv.y, 0.025) + step(0.975, vUv.y));
-        col = mix(col, vec3(1.0, 0.9, 1.0), min(edge, 1.0));
+        float de = min(min(vUv.x, 1.0 - vUv.x) / 0.04, min(vUv.y, 1.0 - vUv.y) / 0.025);
+        float edge = 1.0 - smoothstep(1.0 - fwidth(de), 1.0 + fwidth(de), de);
+        col = mix(col, vec3(1.0, 0.9, 1.0), edge);
         gl_FragColor = vec4(applyFog(col * 1.25, vWorld), 1.0);
       }`,
   });
@@ -368,7 +385,8 @@ function City({ pointer, calm }: { pointer: React.RefObject<{ x: number; y: numb
   const group = useRef<THREE.Group>(null);
   const layout = useCityLayout();
   const look = useMemo(() => new THREE.Vector3(), []);
-  const intro = useRef({ start: -1, announced: false });
+  // tempo do voo somado quadro a quadro (com teto): um quadro lento não faz a câmera "pular"
+  const intro = useRef({ elapsed: 0, announced: false });
   const announce = () => {
     if (intro.current.announced) return;
     intro.current.announced = true;
@@ -381,9 +399,8 @@ function City({ pointer, calm }: { pointer: React.RefObject<{ x: number; y: numb
     if (group.current) group.current.position.z = (clock.elapsedTime * speed) % PERIOD;
 
     // voo de abertura (o relógio começa no primeiro quadro desenhado)
-    const now = clock.elapsedTime;
-    if (intro.current.start < 0) intro.current.start = now;
-    const t = Math.min(1, (now - intro.current.start) / INTRO_SECONDS);
+    intro.current.elapsed += Math.min(dt, 1 / 20);
+    const t = Math.min(1, intro.current.elapsed / INTRO_SECONDS);
 
     if (t < 1) {
       const u = ease(t);
@@ -443,6 +460,8 @@ export default function CityScene({ onReady, calm = false }: { onReady?: () => v
         onCreated={() => requestAnimationFrame(() => onReady?.())}
       >
         <City pointer={pointer} calm={calm} />
+        <AdaptiveDpr max={dpr} />
+        <WarmUp />
       </Canvas>
     </div>
   );

@@ -88,7 +88,7 @@ const faqs = [
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden">
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-night/70 backdrop-blur-md">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-night/85">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <Logo />
           <nav className="hidden gap-8 text-sm text-muted md:flex">
@@ -122,7 +122,7 @@ export default function Home() {
         </HeroReveal>
         <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-6 px-4 lg:grid-cols-[1.1fr_1fr]">
           <HeroReveal className="text-center lg:text-left">
-            <span className="glass inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium uppercase tracking-widest text-sun">
+            <span className="glass-flat inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium uppercase tracking-widest text-sun">
               <Flame size={14} /> Bem-vindo à cidade dos virais
             </span>
             <h1 className="mt-6 font-serif text-5xl leading-[1] tracking-[-0.01em] sm:text-7xl md:text-8xl">
@@ -138,7 +138,7 @@ export default function Home() {
               <Link href="/login?modo=cadastro" className="btn-sunset w-full rounded-full px-7 py-3.5 font-semibold text-white sm:w-auto">
                 Entrar na cidade
               </Link>
-              <a href="#como-funciona" className="glass w-full rounded-full px-7 py-3.5 font-medium sm:w-auto">
+              <a href="#como-funciona" className="glass-flat w-full rounded-full px-7 py-3.5 font-medium sm:w-auto">
                 Ver como funciona
               </a>
             </div>

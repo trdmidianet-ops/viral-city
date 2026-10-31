@@ -91,6 +91,13 @@ body {
   backdrop-filter: blur(12px);
 }
 
+/* Mesmo visual sem desfoque: para elementos em cima da cena 3D animada, onde o
+   backdrop-filter teria que ser recalculado a cada quadro e faria a animação travar */
+.glass-flat {
+  background: linear-gradient(180deg, rgba(20, 10, 42, 0.72), rgba(20, 10, 42, 0.55));
+  border: 1px solid var(--line);
+}
+
 /* Grade retrô em perspectiva no chão do hero */
 .retro-grid {
   background-image:
@@ -109,12 +116,14 @@ body {
   }
 }
 
-/* Hero: o conteúdo entra depois do voo do drone (ver HeroReveal). A animação é uma
-   rede de segurança: aparece sozinho em 10 s mesmo se o JavaScript não rodar. */
+/* Hero: o conteúdo entra depois do voo do drone (ver HeroReveal). Sem JavaScript, a
+   animação é a rede de segurança: aparece sozinho em 10 s. */
 .vc-reveal {
   opacity: 0;
   transform: translateY(18px);
   transition: opacity 0.9s ease, transform 0.9s ease;
+}
+html:not(.vc-js) .vc-reveal {
   animation: vc-reveal-failsafe 0s linear 10s forwards;
 }
 .vc-reveal.is-shown {

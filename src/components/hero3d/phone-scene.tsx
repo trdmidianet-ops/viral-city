@@ -267,6 +267,9 @@ function Phone({ pointer, still }: { pointer: React.RefObject<{ x: number; y: nu
     canvas.height = 836;
     const screenTex = new THREE.CanvasTexture(canvas);
     screenTex.colorSpace = THREE.SRGBColorSpace;
+    // a tela é redesenhada o tempo todo: sem mipmaps, o envio para a placa de vídeo fica leve
+    screenTex.generateMipmaps = false;
+    screenTex.minFilter = THREE.LinearFilter;
     const body = new THREE.ExtrudeGeometry(roundedRect(1.7, 3.42, 0.28), {
       depth: 0.14,
       bevelEnabled: true,
@@ -305,6 +308,9 @@ function Phone({ pointer, still }: { pointer: React.RefObject<{ x: number; y: nu
     });
   }, [assets, invalidate]);
 
+  const home = useMemo(() => new THREE.Vector3(), []);
+  const lastDraw = useRef(-1);
+
   useFrame(({ clock }) => {
     const elapsed = clock.elapsedTime;
     const t = still ? 4.5 : elapsed % LOOP;
@@ -327,7 +333,7 @@ function Phone({ pointer, still }: { pointer: React.RefObject<{ x: number; y: nu
       const spread = (i - 2) * (SEG_W + 0.02 + GAP * cut);
       const fly = span(t, flyStart(i), flyStart(i) + 0.65);
       const back = span(t, RESET, RESET + 0.7);
-      const home = new THREE.Vector3(spread, TAPE_Y + Math.sin(elapsed * 2 + i) * 0.03 * cut, TAPE_Z);
+      home.set(spread, TAPE_Y + Math.sin(elapsed * 2 + i) * 0.03 * cut, TAPE_Z);
       if (t >= RESET) {
         mesh.position.set((i - 2) * (SEG_W + 0.02), TAPE_Y, TAPE_Z);
         mesh.scale.setScalar(back);
@@ -345,8 +351,12 @@ function Phone({ pointer, still }: { pointer: React.RefObject<{ x: number; y: nu
       mesh.visible = material.opacity > 0.01;
     });
 
-    drawScreen(assets.ctx, t, assets.f);
-    assets.screenTex.needsUpdate = true;
+    // a tela do celular só precisa de ~30 quadros por segundo; o resto da cena segue a 60
+    if (still || elapsed - lastDraw.current >= 1 / 30) {
+      lastDraw.current = elapsed;
+      drawScreen(assets.ctx, t, assets.f);
+      assets.screenTex.needsUpdate = true;
+    }
   });
 
   return (
@@ -392,14 +402,15 @@ function Phone({ pointer, still }: { pointer: React.RefObject<{ x: number; y: nu
   );
 }
 
-export default function PhoneScene({ still = false }: { still?: boolean }) {
+/** paused: fica parado (sem gastar a placa de vídeo) enquanto o celular ainda está escondido. */
+export default function PhoneScene({ still = false, paused = false }: { still?: boolean; paused?: boolean }) {
   const pointer = useWindowPointer();
   const { ref, visible } = useInView<HTMLDivElement>();
   return (
     <div ref={ref} className="h-full w-full">
       <Canvas
-        dpr={[1, 2]}
-        frameloop={still ? "demand" : visible ? "always" : "never"}
+        dpr={[1, 1.5]}
+        frameloop={still ? "demand" : visible && !paused ? "always" : "never"}
         gl={{ antialias: true, alpha: true }}
         camera={{ position: [0, 0, 8.4], fov: 32 }}
       >

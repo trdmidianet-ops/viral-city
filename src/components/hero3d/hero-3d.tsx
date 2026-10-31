@@ -1,8 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
-import { INTRO_EVENT, isIntroDone } from "./intro";
+import { Component, useEffect, useState, type ReactNode } from "react";
+import { INTRO_EVENT, announceIntroDone, isIntroDone, visibleTimeout } from "./intro";
 
 // As cenas só baixam no navegador, depois que a página já apareceu.
 const CityScene = dynamic(() => import("./city-scene"), { ssr: false });
@@ -36,19 +36,42 @@ const runsCity = (s: Support) => s.webgl && s.strong;
 export function HeroCity() {
   const support = useSupport();
   const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
   // Sem cidade 3D, volta o pôr do sol em SVG (que fica escondido em telas grandes)
   useEffect(() => {
-    if (support && !runsCity(support)) document.documentElement.classList.add("vc-no-3d");
-  }, [support]);
-  if (!support || !runsCity(support)) return null;
+    if (support && (!runsCity(support) || failed)) document.documentElement.classList.add("vc-no-3d");
+  }, [support, failed]);
+  if (!support || !runsCity(support) || failed) return null;
   return (
     <div
       aria-hidden="true"
       className={`pointer-events-none absolute inset-0 transition-opacity duration-500 ${ready ? "opacity-100" : "opacity-0"}`}
     >
-      <CityScene calm={support.reducedMotion} onReady={() => setReady(true)} />
+      <SceneGuard
+        onError={() => {
+          // WebGL falhou de verdade (driver, contexto perdido): volta o SVG e mostra o texto
+          setFailed(true);
+          announceIntroDone();
+        }}
+      >
+        <CityScene calm={support.reducedMotion} onReady={() => setReady(true)} />
+      </SceneGuard>
     </div>
   );
+}
+
+/** Se a cena 3D quebrar, avisa em vez de derrubar a página inteira. */
+class SceneGuard extends Component<{ children: ReactNode; onError: () => void }, { broken: boolean }> {
+  state = { broken: false };
+  static getDerivedStateFromError() {
+    return { broken: true };
+  }
+  componentDidCatch() {
+    this.props.onError();
+  }
+  render() {
+    return this.state.broken ? null : this.props.children;
+  }
 }
 
 /**
@@ -58,6 +81,8 @@ export function HeroCity() {
 export function HeroReveal({ children, className, delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
   const [shown, setShown] = useState(false);
   useEffect(() => {
+    // com JS rodando, quem decide é o voo (a rede de segurança do CSS é só para sem JS)
+    document.documentElement.classList.add("vc-js");
     const support = detect();
     if (!runsCity(support) || isIntroDone()) {
       setShown(true);
@@ -65,10 +90,11 @@ export function HeroReveal({ children, className, delay = 0 }: { children: React
     }
     const show = () => setShown(true);
     window.addEventListener(INTRO_EVENT, show);
-    const safety = setTimeout(show, 9000);
+    // folga para PCs que rodam o voo devagar (o voo dura 6,5 s a 20+ quadros por segundo)
+    const stopSafety = visibleTimeout(12000, show);
     return () => {
       window.removeEventListener(INTRO_EVENT, show);
-      clearTimeout(safety);
+      stopSafety();
     };
   }, []);
   return (
@@ -81,11 +107,22 @@ export function HeroReveal({ children, className, delay = 0 }: { children: React
 /** Celular 3D mostrando o vídeo longo virando 5 cortes. */
 export function HeroPhone() {
   const support = useSupport();
+  const [introDone, setIntroDone] = useState(false);
+  useEffect(() => {
+    if (!support) return;
+    if (!runsCity(support) || isIntroDone()) {
+      setIntroDone(true);
+      return;
+    }
+    const done = () => setIntroDone(true);
+    window.addEventListener(INTRO_EVENT, done);
+    return () => window.removeEventListener(INTRO_EVENT, done);
+  }, [support]);
   if (!support) return null;
   if (!support.webgl) return <PhoneFallback />;
   return (
     <div role="img" aria-label="Animação: um vídeo longo é cortado em 5 Shorts com nota e enviado ao celular" className="h-full w-full">
-      <PhoneScene still={support.reducedMotion} />
+      <PhoneScene still={support.reducedMotion} paused={!introDone} />
     </div>
   );
 }
