@@ -3,8 +3,9 @@
 import { Canvas, useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { COPIES, FOG_FAR, FOG_NEAR, PERIOD, fogChunk, fogUniforms, type PalmSpot } from "./city-shared";
 import { announceIntroDone } from "./intro";
+import { Palms } from "./palms";
 import { AdaptiveDpr, WarmUp } from "./perf";
 import { Sky } from "./sky";
 import { seeded, useInView, useWindowPointer } from "./pointer";
@@ -16,30 +17,8 @@ import { seeded, useInView, useWindowPointer } from "./pointer";
  */
 
 const FOG = "#4a1752";
-const PERIOD = 80; // trecho de cidade que se repete
-const COPIES = 4; // cópias do trecho, para o fim da avenida nunca aparecer
 const SPEED = 7; // unidades por segundo
-const FOG_NEAR = 30;
-const FOG_FAR = 190;
 const INTRO_SECONDS = 6.5;
-
-// Névoa compartilhada por todos os materiais: no voo alto ela se afasta junto com a câmera
-const fogUniforms = {
-  // valores crus (sem conversão de cor), iguais ao horizonte do céu: o chão some na névoa sem emenda
-  uFog: { value: new THREE.Vector3(0.13, 0.04, 0.18) },
-  uFogNear: { value: FOG_NEAR },
-  uFogFar: { value: FOG_FAR },
-};
-
-const fogChunk = /* glsl */ `
-  uniform vec3 uFog;
-  uniform float uFogNear;
-  uniform float uFogFar;
-  vec3 applyFog(vec3 col, vec3 world) {
-    float d = length(world - cameraPosition);
-    return mix(col, uFog, smoothstep(uFogNear, uFogFar, d));
-  }
-`;
 
 // ---------- chão com grade ----------
 
@@ -106,7 +85,7 @@ function useCityLayout() {
     const rand = seeded(7);
     const buildings: Building[] = [];
     const billboards: Billboard[] = [];
-    const palms: { x: number; z: number; s: number; r: number }[] = [];
+    const palms: PalmSpot[] = [];
 
     for (const side of [-1, 1]) {
       // fileira da frente
@@ -254,51 +233,6 @@ function Buildings({ items }: { items: Building[] }) {
   return (
     <instancedMesh ref={ref} args={[undefined, undefined, count]} material={material} frustumCulled={false}>
       <boxGeometry />
-    </instancedMesh>
-  );
-}
-
-function palmGeometry() {
-  const parts: THREE.BufferGeometry[] = [];
-  const trunk = new THREE.CylinderGeometry(0.07, 0.15, 6, 6);
-  trunk.translate(0, 3, 0);
-  parts.push(trunk);
-  for (let i = 0; i < 7; i++) {
-    const leaf = new THREE.ConeGeometry(0.22, 2.6, 4);
-    leaf.translate(0, 1.3, 0);
-    leaf.scale(1, 1, 0.25);
-    leaf.rotateZ(-1.75 - (i % 2) * 0.35);
-    leaf.rotateY((i / 7) * Math.PI * 2);
-    leaf.translate(0, 6, 0);
-    parts.push(leaf);
-  }
-  return mergeGeometries(parts.map((p) => p.toNonIndexed()));
-}
-
-function Palms({ items }: { items: { x: number; z: number; s: number; r: number }[] }) {
-  const ref = useRef<THREE.InstancedMesh>(null);
-  const geometry = useMemo(palmGeometry, []);
-  const count = items.length * COPIES;
-
-  useLayoutEffect(() => {
-    const mesh = ref.current;
-    if (!mesh) return;
-    const m = new THREE.Matrix4();
-    const q = new THREE.Quaternion();
-    let i = 0;
-    for (let c = 0; c < COPIES; c++) {
-      for (const p of items) {
-        q.setFromEuler(new THREE.Euler(0, p.r, Math.sign(p.x) * 0.06));
-        m.compose(new THREE.Vector3(p.x, 0, p.z - c * PERIOD), q, new THREE.Vector3(p.s, p.s, p.s));
-        mesh.setMatrixAt(i++, m);
-      }
-    }
-    mesh.instanceMatrix.needsUpdate = true;
-  }, [items]);
-
-  return (
-    <instancedMesh ref={ref} args={[geometry, undefined, count]} frustumCulled={false}>
-      <meshBasicMaterial color="#0b0618" fog />
     </instancedMesh>
   );
 }

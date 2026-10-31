@@ -244,25 +244,72 @@ export function SunsetScene() {
   );
 }
 
+/** Folha em SVG: nervura em arco que cai na ponta, com folíolos dos dois lados. */
+function frondPath(cx: number, cy: number, dir: number, len: number, lift: number, droop: number) {
+  const steps = 9;
+  const at = (t: number) => [cx + dir * len * t, cy - lift * len * t + droop * len * t * t] as const;
+  let d = "";
+  for (let i = 1; i <= steps; i++) {
+    const [x0, y0] = at((i - 1) / steps);
+    const [x1, y1] = at(i / steps);
+    const tm = (i - 0.5) / steps;
+    const [xm, ym] = at(tm);
+    const ll = 0.42 * len * Math.sin(Math.PI * (0.1 + 0.9 * tm)) * (1 - 0.3 * tm);
+    const dx = x1 - x0;
+    const dy = y1 - y0;
+    const n = Math.hypot(dx, dy) || 1;
+    for (const side of [-1, 1]) {
+      // perpendicular à nervura, puxado para frente e para baixo (folíolo dobrado)
+      const tx = xm + (-dy / n) * ll * side + (dx / n) * ll * 0.5;
+      const ty = ym + (dx / n) * ll * side + (dy / n) * ll * 0.5 + ll * 0.35;
+      d += `M${x0.toFixed(1)} ${y0.toFixed(1)}L${tx.toFixed(1)} ${ty.toFixed(1)}L${x1.toFixed(1)} ${y1.toFixed(1)}Z`;
+    }
+  }
+  return d;
+}
+
+const CROWN = [92, 74] as const;
+const FRONDS = [
+  frondPath(...CROWN, 1, 68, 0.55, 1.05),
+  frondPath(...CROWN, -1, 70, 0.5, 1.0),
+  frondPath(...CROWN, 1, 52, 0.9, 1.25),
+  frondPath(...CROWN, -1, 54, 0.95, 1.25),
+  frondPath(...CROWN, 1, 44, 0.2, 1.5),
+  frondPath(...CROWN, -1, 46, 0.25, 1.45),
+  frondPath(...CROWN, 1, 30, 1.6, 1.4),
+  frondPath(...CROWN, -1, 30, 1.6, 1.5),
+].join("");
+
+/** Palmeira "tropical neon": folhas verdes caídas, pontas rosa, tronco aquecido e luz ciano na base. */
 function Palm({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 120 300" fill="#0b0618" stroke="#ff2e88" strokeOpacity="0.35" strokeWidth="1">
-      <path d="M60 300 C58 230 56 160 66 70 L72 71 C64 160 66 230 68 300 Z" />
-      {/* anéis do tronco */}
-      <g stroke="#2a0f4a" strokeOpacity="1">
-        {[100, 130, 160, 190, 220, 250, 280].map((y) => (
-          <line key={y} x1={60} y1={y} x2={69} y2={y - 2} />
+    <svg className={className} viewBox="0 0 170 320">
+      <defs>
+        <linearGradient id="vc-palm-leaf" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#2bbf8a" />
+          <stop offset="100%" stopColor="#0d4a42" />
+        </linearGradient>
+        <linearGradient id="vc-palm-trunk" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#2a1530" />
+          <stop offset="60%" stopColor="#5a2e44" />
+          <stop offset="100%" stopColor="#ff8a5c" />
+        </linearGradient>
+        <radialGradient id="vc-palm-pool" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.6" />
+          <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <ellipse cx="84" cy="312" rx="56" ry="8" fill="url(#vc-palm-pool)" />
+      <path d="M78 314 C79 240 82 150 89 74 L95 75 C89 150 87 240 88 314 Z" fill="url(#vc-palm-trunk)" />
+      <path d="M86 312 C86 280 87 250 88 226" fill="none" stroke="#22d3ee" strokeWidth="2" strokeOpacity="0.7" />
+      <g stroke="#1a0b2a" strokeWidth="1.2">
+        {[110, 140, 170, 200, 230, 260, 290].map((y) => (
+          <line key={y} x1={80} y1={y} x2={90} y2={y - 1.5} />
         ))}
       </g>
-      <path d="M68 72 C50 50 22 48 4 64 C26 56 48 60 68 78 Z" />
-      <path d="M68 72 C84 46 108 40 120 52 C100 50 84 60 70 78 Z" />
-      <path d="M68 72 C60 40 40 22 20 22 C42 30 58 50 66 78 Z" />
-      <path d="M68 72 C76 40 92 22 110 18 C92 32 80 50 72 78 Z" />
-      <path d="M68 72 C84 70 104 82 112 102 C98 86 84 80 70 78 Z" />
-      <path d="M68 72 C50 76 32 92 26 112 C40 94 54 84 68 80 Z" />
-      <path d="M68 72 C66 56 70 40 80 30 C76 46 74 60 70 78 Z" />
-      <circle cx="66" cy="78" r="4" />
-      <circle cx="72" cy="80" r="3.5" />
+      <path d={FRONDS} fill="url(#vc-palm-leaf)" stroke="#ff2e88" strokeOpacity="0.32" strokeWidth="0.6" strokeLinejoin="round" />
+      <circle cx="90" cy="80" r="4" fill="#5a3a20" />
+      <circle cx="96" cy="81" r="3.6" fill="#5a3a20" />
     </svg>
   );
 }
