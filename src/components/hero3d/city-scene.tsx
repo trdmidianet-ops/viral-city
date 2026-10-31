@@ -67,10 +67,17 @@ function Floor({ speed }: { speed: number }) {
       }),
     [],
   );
-  useFrame(({ clock }) => (material.uniforms.uOffset.value = (clock.elapsedTime * speed) % 24));
+  const mesh = useRef<THREE.Mesh>(null);
+  // Chão subdividido que acompanha a câmera: com os vértices sempre perto dela, a placa de
+  // vídeo não perde precisão e a grade e as faixas não "tremem". O desenho usa a posição no
+  // mundo, então mover a malha não muda nada do que se vê.
+  useFrame(({ clock, camera }) => {
+    material.uniforms.uOffset.value = (clock.elapsedTime * speed) % 24;
+    mesh.current?.position.set(camera.position.x, 0, camera.position.z);
+  });
   return (
-    <mesh rotation-x={-Math.PI / 2} position={[0, 0, -300]} material={material}>
-      <planeGeometry args={[6000, 6000]} />
+    <mesh ref={mesh} rotation-x={-Math.PI / 2} material={material} frustumCulled={false}>
+      <planeGeometry args={[2400, 2400, 120, 120]} />
     </mesh>
   );
 }
@@ -390,7 +397,7 @@ export default function CityScene({ onReady, calm = false }: { onReady?: () => v
         dpr={dpr}
         frameloop={visible ? "always" : "never"}
         gl={{ antialias: true, powerPreference: "high-performance" }}
-        camera={{ position: [-90, 170, 110], fov: 55, near: 0.1, far: 2000 }}
+        camera={{ position: [-90, 170, 110], fov: 55, near: 0.4, far: 2000 }}
         onCreated={() => requestAnimationFrame(() => onReady?.())}
       >
         <City pointer={pointer} calm={calm} />
