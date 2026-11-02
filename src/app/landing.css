@@ -276,33 +276,61 @@
   }
 }
 
-/* ---------- chamada final: céu, sol listrado e grade ---------- */
+/* ---------- chamada final: céu, logo nascendo no horizonte e grade ---------- */
 .vc-cta {
-  background: linear-gradient(180deg, #1a0b3a 0%, #4a1460 45%, #a2246a 75%, #ff6a3d 100%);
+  /* o céu termina no horizonte; abaixo dele fica escuro, atrás da grade */
+  background: linear-gradient(
+    180deg,
+    #1a0b3a 0%,
+    #4a1460 40%,
+    #a2246a calc(100% - 140px),
+    #ff6a3d calc(100% - 70px),
+    #0b0618 calc(100% - 70px)
+  );
 }
-.vc-cta-sun {
+.vc-cta-logo {
   position: absolute;
   left: 50%;
-  bottom: 70px;
-  width: min(380px, 72vw);
+  bottom: 58px;
+  width: clamp(160px, 30vw, 220px);
   aspect-ratio: 1;
-  transform: translate(-50%, 50%);
+  transform: translateX(-50%);
+}
+.vc-cta-float {
+  position: relative;
+  animation: vc-float 6s ease-in-out infinite;
+  filter: drop-shadow(0 0 18px rgba(255, 46, 136, 0.75)) drop-shadow(0 0 48px rgba(255, 138, 61, 0.45));
+}
+.vc-cta-float svg {
+  width: 100%;
+  height: auto;
+}
+@keyframes vc-float {
+  50% {
+    transform: translateY(-8px);
+  }
+}
+/* halo quente atrás da logo */
+.vc-cta-glow {
+  position: absolute;
+  inset: -35%;
   border-radius: 50%;
-  background: linear-gradient(180deg, var(--sun) 10%, var(--orange) 45%, var(--pink) 80%);
-  box-shadow: 0 0 120px 20px rgba(255, 138, 61, 0.45);
-  mask-image: linear-gradient(
-    180deg,
-    black 0 26%,
-    transparent 26% 28%,
-    black 28% 33%,
-    transparent 33% 36%,
-    black 36% 40%,
-    transparent 40% 44%,
-    black 44% 47%,
-    transparent 47% 52%,
-    black 52%
-  );
-  opacity: 0.85;
+  background: radial-gradient(circle, rgba(255, 209, 102, 0.55), rgba(255, 46, 136, 0.28) 40%, transparent 68%);
+  animation: vc-glow 4s ease-in-out infinite;
+}
+@keyframes vc-glow {
+  50% {
+    opacity: 0.7;
+    transform: scale(0.94);
+  }
+}
+/* raios de luz girando devagar */
+.vc-cta-rays {
+  position: absolute;
+  inset: -120%;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 209, 102, 0.16) 0deg 6deg, transparent 6deg 18deg);
+  mask-image: radial-gradient(circle, black 18%, transparent 55%);
+  animation: vc-spin 60s linear infinite;
 }
 .vc-cta-floor {
   position: absolute;
@@ -345,7 +373,10 @@
   .vc-sweep,
   .vc-blip,
   .vc-marquee-track,
-  .vc-cta-floor {
+  .vc-cta-floor,
+  .vc-cta-float,
+  .vc-cta-glow,
+  .vc-cta-rays {
     animation: none;
   }
   .vc-upload {

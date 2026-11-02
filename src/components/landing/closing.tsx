@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Logo } from "@/components/brand";
+import { Logo, LogoMark } from "@/components/brand";
 import { Reveal } from "./reveal";
 import { Accent, SectionTitle } from "./section-title";
 
@@ -75,14 +75,20 @@ export function Faq() {
   );
 }
 
-/** Chamada final: sol listrado do synthwave nascendo atrás do texto, com a grade no chão. */
+/** Chamada final: a logo da Viral City nascendo no horizonte, com raios de luz e a grade no chão. */
 export function FinalCta() {
   return (
     <section className="px-4 pb-28">
       <Reveal className="vc-cta relative mx-auto max-w-5xl overflow-hidden rounded-[2rem] ring-1 ring-pink/30">
-        <div aria-hidden="true" className="vc-cta-sun" />
+        <div aria-hidden="true" className="vc-cta-logo">
+          <div className="vc-cta-rays" />
+          <div className="vc-cta-glow" />
+          <div className="vc-cta-float">
+            <LogoMark size={220} />
+          </div>
+        </div>
         <div aria-hidden="true" className="vc-cta-floor" />
-        <div className="relative px-6 pb-56 pt-16 text-center sm:pb-64 sm:pt-20">
+        <div className="relative px-6 pb-[17rem] pt-16 text-center sm:pb-[20rem] sm:pt-20">
           <h2 className="font-heading text-4xl font-medium tracking-[-0.04em] sm:text-6xl">
             A cidade está <Accent>esperando</Accent>
           </h2>
