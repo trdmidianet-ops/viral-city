@@ -1,4 +1,4 @@
-import { db, must } from "@/lib/db";
+import { insertRow, query, queryOne, updateRows } from "@/lib/db";
 
 export type VideoStatus = "queued" | "rendering" | "ready" | "publishing" | "published" | "failed";
 
@@ -6,6 +6,7 @@ export type Reference = { videoId?: string; title?: string; channel?: string; ur
 
 export type Video = {
   id: string;
+  user_id: string;
   account_id: string | null;
   reference: Reference | null;
   title: string;
@@ -22,10 +23,8 @@ export type Video = {
   updated_at: string;
 };
 
-const T = "vc_videos";
-
 /** Corte aprovado vira um vídeo pronto para a agenda postar. */
-export async function createReadyVideo(input: {
+export async function createReadyVideo(userId: string, input: {
   accountId: string | null;
   reference: Reference | null;
   title: string;
@@ -33,55 +32,36 @@ export async function createReadyVideo(input: {
   localPath: string;
   duration: number;
 }): Promise<Video> {
-  return must<Video>(
-    await db()
-      .from(T)
-      .insert({
-        account_id: input.accountId,
-        reference: input.reference,
-        title: input.title,
-        description: input.description,
-        status: "ready",
-        local_path: input.localPath,
-        duration_seconds: input.duration,
-      })
-      .select("*")
-      .single(),
-    "Criar vídeo",
-  );
+  return insertRow<Video>("vc_videos", {
+    user_id: userId,
+    account_id: input.accountId,
+    reference: input.reference,
+    title: input.title,
+    description: input.description,
+    status: "ready",
+    local_path: input.localPath,
+    duration_seconds: input.duration,
+  });
 }
 
-export async function listVideos(limit = 50): Promise<Video[]> {
-  return must<Video[]>(
-    await db().from(T).select("*").order("created_at", { ascending: false }).limit(limit),
-    "Listar vídeos",
-  );
+export async function listVideos(userId: string, limit = 50): Promise<Video[]> {
+  return query<Video>("select * from vc_videos where user_id = $1 order by created_at desc limit $2", [userId, limit]);
 }
 
 async function update(id: string, patch: Partial<Video>, onlyIfStatus?: VideoStatus[]) {
-  let q = db()
-    .from(T)
-    .update({ ...patch, updated_at: new Date().toISOString() })
-    .eq("id", id);
-  if (onlyIfStatus) q = q.in("status", onlyIfStatus);
-  return must<Video[]>(await q.select("*"), "Atualizar vídeo");
+  const where = onlyIfStatus ? "id = $1 and status = any($2)" : "id = $1";
+  return updateRows<Video>("vc_videos", { ...patch, updated_at: new Date().toISOString() }, where, onlyIfStatus ? [id, onlyIfStatus] : [id]);
 }
 
 export const markFailed = (id: string, error: string) => update(id, { status: "failed", error: error.slice(0, 1000) });
 
-/** Próximo vídeo pronto para a conta (os sem conta definida também servem). */
-export async function nextReadyFor(accountId: string): Promise<Video | null> {
-  const rows = must<Video[]>(
-    await db()
-      .from(T)
-      .select("*")
-      .eq("status", "ready")
-      .or(`account_id.eq.${accountId},account_id.is.null`)
-      .order("created_at")
-      .limit(1),
-    "Próximo vídeo pronto",
+/** Próximo vídeo pronto para a conta (os do mesmo dono sem conta definida também servem). */
+export async function nextReadyFor(accountId: string, userId: string): Promise<Video | null> {
+  return queryOne<Video>(
+    `select * from vc_videos where user_id = $1 and status = 'ready' and (account_id = $2 or account_id is null)
+     order by created_at limit 1`,
+    [userId, accountId],
   );
-  return rows[0] ?? null;
 }
 
 export async function claimForPublishing(id: string, accountId: string): Promise<Video | null> {
@@ -93,22 +73,26 @@ export const markPublished = (id: string, externalId: string) =>
   update(id, { status: "published", external_post_id: externalId, published_at: new Date().toISOString() });
 
 /** Volta um vídeo com erro para a etapa certa: renderizar de novo ou só tentar postar de novo. */
-export async function retryVideo(id: string) {
-  const [v] = must<Video[]>(await db().from(T).select("*").eq("id", id), "Buscar vídeo");
+export async function retryVideo(userId: string, id: string) {
+  const v = await queryOne<Video>("select * from vc_videos where id = $1 and user_id = $2", [id, userId]);
   if (!v || v.status !== "failed") return;
   await update(id, { status: v.local_path ? "ready" : "queued", error: null }, ["failed"]);
 }
 
-export async function deleteVideo(id: string) {
-  must(await db().from(T).delete().eq("id", id).in("status", ["queued", "ready", "failed", "published"]), "Apagar vídeo");
+export async function deleteVideo(userId: string, id: string) {
+  await query("delete from vc_videos where id = $1 and user_id = $2 and status = any($3)", [
+    id,
+    userId,
+    ["queued", "ready", "failed", "published"],
+  ]);
 }
 
 /** Vídeos que travaram em "renderizando"/"publicando" (ex.: PC desligou no meio) voltam para a fila. */
 export async function recoverStuck(olderThanMinutes = 30) {
   const cutoff = new Date(Date.now() - olderThanMinutes * 60_000).toISOString();
-  must(await db().from(T).update({ status: "queued" }).eq("status", "rendering").lt("updated_at", cutoff), "Recuperar fila");
-  must(
-    await db().from(T).update({ status: "failed", error: "Publicação interrompida. Verifique no canal antes de tentar de novo." }).eq("status", "publishing").lt("updated_at", cutoff),
-    "Recuperar publicações",
-  );
+  await query("update vc_videos set status = 'queued' where status = 'rendering' and updated_at < $1", [cutoff]);
+  await query("update vc_videos set status = 'failed', error = $2 where status = 'publishing' and updated_at < $1", [
+    cutoff,
+    "Publicação interrompida. Verifique no canal antes de tentar de novo.",
+  ]);
 }

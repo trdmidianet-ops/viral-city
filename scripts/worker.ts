@@ -1,6 +1,7 @@
 /**
  * Worker da Viral City — roda no seu PC: `npm run worker`.
- * 1) Cortes: baixa o vídeo longo, transcreve (Whisper), a IA escolhe 5 cortes e o FFmpeg renderiza.
+ * 1) Cortes: baixa o vídeo longo, cobra os CityCoins, transcreve (Whisper), a IA escolhe 5 cortes
+ *    e o FFmpeg renderiza. Se der erro depois da cobrança, os CityCoins voltam para a carteira.
  * 2) Agenda: nos horários marcados, posta o próximo vídeo aprovado de cada conta no YouTube.
  * Deixe a janela aberta; ele verifica tudo a cada 20 segundos.
  */
@@ -10,6 +11,8 @@ import { acquireSource } from "@/lib/clips/acquire";
 import { askClaude } from "@/lib/clips/ai";
 import { mediaDuration } from "@/lib/clips/ffmpeg";
 import { buildPrompt, fallbackClips, parseClips, toSegments } from "@/lib/clips/pick";
+import { costForDuration, formatCoins } from "@/lib/coins/pricing";
+import { chargeSource, refundSource } from "@/lib/coins/wallet";
 import { renderClip } from "@/lib/clips/render";
 import {
   claimNextClip,
@@ -55,6 +58,13 @@ async function processSource(source: Source) {
   if (!duration) throw new Error("Não consegui ler a duração do vídeo.");
   await updateSource(source.id, { local_path: file, duration_seconds: duration });
 
+  const cost = costForDuration(duration);
+  const charge = await chargeSource(source.id, cost, `Cortes de "${(source.title || source.upload_name || "vídeo").slice(0, 80)}" (${Math.ceil(duration / 60)} min)`);
+  if (!charge.ok) {
+    throw new Error(`Saldo insuficiente: este vídeo custa ${formatCoins(cost)} CityCoins. Recarregue na Carteira e tente de novo.`);
+  }
+  if (charge.balance !== null) log(`🪙 ${formatCoins(cost)} CityCoins cobrados (saldo: ${formatCoins(charge.balance)}).`);
+
   await step("transcribing", "Transcrevendo a fala (Whisper)…");
   const words = await transcribe(file, source.language);
   if (words.length < 20) throw new Error("O vídeo tem pouca fala para escolher cortes.");
@@ -97,6 +107,8 @@ async function sourcesQueue() {
     } catch (err) {
       await updateSource(source.id, { status: "failed", error: message(err).slice(0, 1000), progress: null });
       log(`❌ Fonte falhou: ${message(err)}`);
+      const refunded = await refundSource(source.id, `Estorno: os cortes de "${(source.title || "vídeo").slice(0, 80)}" falharam`).catch(() => null);
+      if (refunded !== null) log(`↩️  CityCoins devolvidos (saldo: ${formatCoins(refunded)}).`);
     }
   }
 }
@@ -135,7 +147,8 @@ async function publishDue() {
 
     const account = await getAccount(slot.account_id);
     if (!account || account.platform !== "youtube") continue;
-    const next = await nextReadyFor(account.id);
+    if (!account.userId) continue;
+    const next = await nextReadyFor(account.id, account.userId);
     if (!next?.local_path) {
       log(`⏰ Horário de ${account.name}, mas não há corte aprovado na fila.`);
       continue;
@@ -172,7 +185,7 @@ async function tick() {
 
 async function main() {
   if (!isDbConfigured()) {
-    console.error("Configure SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no .env.local antes de rodar o worker.");
+    console.error("Configure DATABASE_URL no .env.local antes de rodar o worker.");
     process.exit(1);
   }
   log("🌴 Worker da Viral City ligado. Ctrl+C para parar.");

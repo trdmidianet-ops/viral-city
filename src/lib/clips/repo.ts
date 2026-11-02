@@ -1,4 +1,4 @@
-import { db, must } from "@/lib/db";
+import { insertRow, query, queryOne, updateRows } from "@/lib/db";
 
 export type SourceKind = "channel" | "file" | "link";
 export type Framing = "center" | "blur" | "split";
@@ -17,6 +17,7 @@ export type Word = { text: string; start: number; end: number };
 
 export type Source = {
   id: string;
+  user_id: string;
   kind: SourceKind;
   account_id: string | null;
   youtube_video_id: string | null;
@@ -36,6 +37,7 @@ export type Source = {
   duration_seconds: number | null;
   transcript: Word[] | null;
   ai_used: boolean | null;
+  charged_coins: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -58,12 +60,8 @@ export type Clip = {
   updated_at: string;
 };
 
-const S = "vc_sources";
-const C = "vc_clips";
 const LIST_COLS =
-  "id,kind,account_id,youtube_video_id,source_url,upload_name,title,language,framing,captions,use_logo,niche,reference_title,status,progress,error,local_path,duration_seconds,ai_used,created_at,updated_at";
-
-const now = () => new Date().toISOString();
+  "id, user_id, kind, account_id, youtube_video_id, source_url, upload_name, title, language, framing, captions, use_logo, niche, reference_title, status, progress, error, local_path, duration_seconds, ai_used, charged_coins, created_at, updated_at";
 
 // ---------- fontes (vídeos longos) ----------
 export type NewSource = Pick<
@@ -71,103 +69,83 @@ export type NewSource = Pick<
   "kind" | "account_id" | "youtube_video_id" | "source_url" | "upload_name" | "title" | "language" | "framing" | "captions" | "use_logo" | "niche" | "reference_title"
 > & { local_path?: string | null };
 
-export async function createSource(input: NewSource): Promise<Source> {
-  return must<Source>(await db().from(S).insert(input).select("*").single(), "Criar fonte");
+export async function createSource(userId: string, input: NewSource): Promise<Source> {
+  return insertRow<Source>("vc_sources", { ...input, user_id: userId });
 }
 
-export async function listSources(limit = 30): Promise<Source[]> {
-  return must<Source[]>(
-    await db().from(S).select(LIST_COLS).order("created_at", { ascending: false }).limit(limit),
-    "Listar fontes",
-  );
+export async function listSources(userId: string, limit = 30): Promise<Source[]> {
+  return query<Source>(`select ${LIST_COLS} from vc_sources where user_id = $1 order by created_at desc limit $2`, [userId, limit]);
 }
 
+/** Fonte do usuário (painel). */
+export async function getOwnedSource(userId: string, id: string): Promise<Source | null> {
+  return queryOne<Source>(`select ${LIST_COLS} from vc_sources where id = $1 and user_id = $2`, [id, userId]);
+}
+
+/** Fonte pelo ID, sem checar dono: uso interno do worker. */
 export async function getSource(id: string, withTranscript = false): Promise<Source | null> {
-  return must<Source | null>(
-    await db().from(S).select(withTranscript ? "*" : LIST_COLS).eq("id", id).maybeSingle(),
-    "Buscar fonte",
-  );
+  return queryOne<Source>(`select ${withTranscript ? "*" : LIST_COLS} from vc_sources where id = $1`, [id]);
 }
 
 export async function updateSource(id: string, patch: Partial<Source>) {
-  must(await db().from(S).update({ ...patch, updated_at: now() }).eq("id", id), "Atualizar fonte");
+  await updateRows("vc_sources", { ...patch, updated_at: new Date().toISOString() }, "id = $1", [id]);
 }
 
-/** Pega a próxima fonte da fila de forma atômica. */
+/** Pega a próxima fonte da fila de forma atômica (dois workers nunca pegam a mesma). */
 export async function claimNextSource(): Promise<Source | null> {
-  const next = must<{ id: string }[]>(
-    await db().from(S).select("id").eq("status", "queued").order("created_at").limit(1),
-    "Fila de fontes",
-  )[0];
-  if (!next) return null;
-  const rows = must<Source[]>(
-    await db()
-      .from(S)
-      .update({ status: "downloading", error: null, updated_at: now() })
-      .eq("id", next.id)
-      .eq("status", "queued")
-      .select("*"),
-    "Pegar fonte",
+  return queryOne<Source>(
+    `update vc_sources set status = 'downloading', error = null, updated_at = now()
+     where id = (select id from vc_sources where status = 'queued' order by created_at limit 1 for update skip locked)
+     returning *`,
   );
-  return rows[0] ?? null;
 }
 
-export async function deleteSource(id: string) {
-  must(await db().from(S).delete().eq("id", id), "Apagar fonte");
+export async function deleteSource(userId: string, id: string) {
+  await query("delete from vc_sources where id = $1 and user_id = $2", [id, userId]);
 }
 
 // ---------- cortes ----------
 export type NewClip = Pick<Clip, "position" | "start_seconds" | "end_seconds" | "score" | "hook" | "reason" | "is_best">;
 
 export async function replaceClips(sourceId: string, clips: NewClip[]) {
-  must(await db().from(C).delete().eq("source_id", sourceId).neq("status", "approved"), "Limpar cortes");
-  if (clips.length) must(await db().from(C).insert(clips.map((c) => ({ ...c, source_id: sourceId }))), "Salvar cortes");
+  await query("delete from vc_clips where source_id = $1 and status <> 'approved'", [sourceId]);
+  for (const c of clips) await insertRow("vc_clips", { ...c, source_id: sourceId });
 }
 
 export async function listClips(sourceId: string): Promise<Clip[]> {
-  return must<Clip[]>(
-    await db().from(C).select("*").eq("source_id", sourceId).order("score", { ascending: false }),
-    "Listar cortes",
-  );
+  return query<Clip>("select * from vc_clips where source_id = $1 order by score desc", [sourceId]);
 }
 
 export async function getClip(id: string): Promise<Clip | null> {
-  return must<Clip | null>(await db().from(C).select("*").eq("id", id).maybeSingle(), "Buscar corte");
+  return queryOne<Clip>("select * from vc_clips where id = $1", [id]);
+}
+
+/** Corte com a fonte dele, só se a fonte pertencer ao usuário. */
+export async function getOwnedClip(userId: string, id: string): Promise<{ clip: Clip; source: Source } | null> {
+  const clip = await getClip(id);
+  const source = clip ? await getOwnedSource(userId, clip.source_id) : null;
+  return clip && source ? { clip, source } : null;
 }
 
 export async function updateClip(id: string, patch: Partial<Clip>) {
-  must(await db().from(C).update({ ...patch, updated_at: now() }).eq("id", id), "Atualizar corte");
+  await updateRows("vc_clips", { ...patch, updated_at: new Date().toISOString() }, "id = $1", [id]);
 }
 
-/** Próximo corte esperando renderização (novo ou editado). */
+/** Próximo corte esperando renderização (novo ou editado), de forma atômica. */
 export async function claimNextClip(): Promise<Clip | null> {
-  const next = must<{ id: string }[]>(
-    await db().from(C).select("id").eq("status", "pending").order("updated_at").limit(1),
-    "Fila de cortes",
-  )[0];
-  if (!next) return null;
-  const rows = must<Clip[]>(
-    await db()
-      .from(C)
-      .update({ status: "rendering", error: null, updated_at: now() })
-      .eq("id", next.id)
-      .eq("status", "pending")
-      .select("*"),
-    "Pegar corte",
+  return queryOne<Clip>(
+    `update vc_clips set status = 'rendering', error = null, updated_at = now()
+     where id = (select id from vc_clips where status = 'pending' order by updated_at limit 1 for update skip locked)
+     returning *`,
   );
-  return rows[0] ?? null;
 }
 
 /** Cortes/fontes travados (PC desligou no meio) voltam para a fila. */
 export async function recoverStuckClips(olderThanMinutes = 30) {
   const cutoff = new Date(Date.now() - olderThanMinutes * 60_000).toISOString();
-  must(await db().from(C).update({ status: "pending" }).eq("status", "rendering").lt("updated_at", cutoff), "Recuperar cortes");
-  must(
-    await db()
-      .from(S)
-      .update({ status: "queued" })
-      .in("status", ["downloading", "transcribing", "analyzing"])
-      .lt("updated_at", cutoff),
-    "Recuperar fontes",
+  await query("update vc_clips set status = 'pending' where status = 'rendering' and updated_at < $1", [cutoff]);
+  await query(
+    "update vc_sources set status = 'queued' where status in ('downloading', 'transcribing', 'analyzing') and updated_at < $1",
+    [cutoff],
   );
 }

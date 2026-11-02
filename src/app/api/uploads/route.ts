@@ -6,14 +6,14 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { NextResponse, type NextRequest } from "next/server";
 import { GATE_COOKIE, hasAccess } from "@/lib/gate";
-import { getUser } from "@/lib/supabase/server";
+import { currentUserId } from "@/lib/auth";
 import { UPLOADS_DIR, canUseLocalFiles } from "@/lib/clips/local-files";
 
 const ALLOWED = ["mp4", "mov", "mkv", "webm", "m4v"];
 
 /** Recebe o vídeo longo enviado pelo painel aberto no PC e grava em .data/uploads. */
 export async function POST(req: NextRequest) {
-  if (!(await hasAccess(req.cookies.get(GATE_COOKIE)?.value, async () => Boolean(await getUser())))) {
+  if (!(await hasAccess(req.cookies.get(GATE_COOKIE)?.value, async () => Boolean(await currentUserId())))) {
     return NextResponse.json({ error: "Acesso negado." }, { status: 401 });
   }
   if (!canUseLocalFiles()) {

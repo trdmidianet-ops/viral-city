@@ -1,14 +1,16 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand";
-import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { isAuthConfigured, isGoogleLoginConfigured } from "@/lib/auth-config";
+import { safeNext } from "@/lib/gate";
 import { AuthForm } from "./auth-form";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ modo?: string }>;
+  searchParams: Promise<{ modo?: string; next?: string }>;
 }) {
-  const { modo } = await searchParams;
+  const { modo, next: nextParam } = await searchParams;
+  const next = safeNext(nextParam);
   const mode = modo === "cadastro" ? "signup" : "signin";
 
   return (
@@ -22,12 +24,12 @@ export default async function LoginPage({
           {mode === "signup" ? "Crie sua conta" : "Bem-vindo de volta"}
         </h1>
 
-        {isSupabaseConfigured ? (
-          <AuthForm mode={mode} />
+        {isAuthConfigured() ? (
+          <AuthForm mode={mode} next={next} google={isGoogleLoginConfigured()} />
         ) : (
           <div className="mt-6 space-y-4 text-sm">
             <p className="rounded-lg border border-sun/30 bg-sun/10 p-3 text-sun">
-              Supabase ainda não configurado. O painel abre em <strong>modo demo</strong>, sem login.
+              Login ainda não configurado. O painel abre em <strong>modo demo</strong>, sem conta.
             </p>
             <Link href="/painel" className="btn-sunset block rounded-full py-3 text-center font-semibold text-white">
               Entrar no modo demo
@@ -38,12 +40,12 @@ export default async function LoginPage({
         <p className="mt-6 text-center text-sm text-muted">
           {mode === "signup" ? (
             <>
-              Já tem conta? <Link href="/login" className="text-pink hover:underline">Entrar</Link>
+              Já tem conta? <Link href={`/login?next=${encodeURIComponent(next)}`} className="text-pink hover:underline">Entrar</Link>
             </>
           ) : (
             <>
               Novo por aqui?{" "}
-              <Link href="/login?modo=cadastro" className="text-pink hover:underline">Criar conta</Link>
+              <Link href={`/login?modo=cadastro&next=${encodeURIComponent(next)}`} className="text-pink hover:underline">Criar conta</Link>
             </>
           )}
         </p>

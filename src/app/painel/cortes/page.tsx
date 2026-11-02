@@ -4,6 +4,7 @@ import { EmptyState, PageHeader } from "@/components/painel-ui";
 import { listAccounts } from "@/lib/accounts/store";
 import { canUseLocalFiles } from "@/lib/clips/local-files";
 import { listSources } from "@/lib/clips/repo";
+import { requireUserId } from "@/lib/auth";
 import { isDbConfigured } from "@/lib/db";
 import { listChannelUploads } from "@/lib/youtube/channel";
 import { niches } from "@/lib/youtube/niches";
@@ -24,7 +25,7 @@ export default async function CortesPage({ searchParams }: { searchParams: Promi
         <EmptyState
           icon={Database}
           title="Falta conectar o banco de dados"
-          text="Coloque SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no .env.local (e na Vercel)."
+          text="Coloque DATABASE_URL no .env.local (e na Vercel)."
         />
       </>
     );
@@ -32,9 +33,10 @@ export default async function CortesPage({ searchParams }: { searchParams: Promi
 
   const params = await searchParams;
   const nicheParam = one(params, "nicho", 30);
-  const accounts = await listAccounts("youtube");
+  const userId = await requireUserId();
+  const accounts = await listAccounts(userId, "youtube");
   const [sources, uploadLists] = await Promise.all([
-    listSources(),
+    listSources(userId),
     Promise.all(accounts.map(async (a) => [a.id, await listChannelUploads(a.externalId)] as const)),
   ]);
 

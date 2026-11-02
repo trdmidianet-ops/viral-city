@@ -1,6 +1,7 @@
 import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { upsertAccount } from "@/lib/accounts/store";
+import { currentUserId } from "@/lib/auth";
 import { OAuthError, appUrl, getProvider, redirectUri } from "@/lib/oauth/providers";
 
 function back(query: Record<string, string>) {
@@ -34,13 +35,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ plat
   const code = url.searchParams.get("code");
   if (!code) return done({ erro: `${provider.label} não devolveu o código de autorização.` });
 
+  const userId = await currentUserId();
+  if (!userId) return done({ erro: "Sua sessão expirou. Entre de novo e conecte a conta." });
+
   try {
     const { profile, tokens } = await provider.exchange({ code, redirectUri: redirectUri(provider) });
-    const account = await upsertAccount({ platform: provider.platform, ...profile }, tokens);
+    const account = await upsertAccount(userId, { platform: provider.platform, ...profile }, tokens);
     return done({ conectado: account.name });
   } catch (err) {
-    const message = err instanceof OAuthError ? err.message : "Falha inesperada ao conectar a conta.";
-    if (!(err instanceof OAuthError)) console.error("[oauth]", platform, err);
+    const known = err instanceof OAuthError || (err instanceof Error && err.message.includes("outra conta"));
+    const message = known ? (err as Error).message : "Falha inesperada ao conectar a conta.";
+    if (!known) console.error("[oauth]", platform, err);
     return done({ erro: message });
   }
 }

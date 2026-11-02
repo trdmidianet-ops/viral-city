@@ -5,7 +5,8 @@ import { platforms } from "@/components/platform-icons";
 import { listAccounts } from "@/lib/accounts/store";
 import { isDbConfigured } from "@/lib/db";
 import { weekdays } from "@/lib/schedule/due";
-import { listSlots } from "@/lib/schedule/repo";
+import { listSlotsFor } from "@/lib/schedule/repo";
+import { requireUserId } from "@/lib/auth";
 import { addSlotAction, removeSlotAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -20,13 +21,14 @@ export default async function AgendaPage() {
         <EmptyState
           icon={Database}
           title="Falta conectar o banco de dados"
-          text="A agenda fica no banco da Viral City. Coloque SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no .env.local (e na Vercel)."
+          text="A agenda fica no banco da Viral City. Coloque DATABASE_URL no .env.local (e na Vercel)."
         />
       </>
     );
   }
 
-  const [accounts, slots] = await Promise.all([listAccounts(), listSlots()]);
+  const userId = await requireUserId();
+  const [accounts, slots] = await Promise.all([listAccounts(userId), listSlotsFor(userId)]);
 
   return (
     <>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarClock, LayoutDashboard, Scissors, Settings, TrendingUp, Users } from "lucide-react";
+import { CalendarClock, LayoutDashboard, Scissors, Settings, TrendingUp, Users, Wallet } from "lucide-react";
 
 export const navItems = [
   { href: "/painel", label: "Visão geral", icon: LayoutDashboard },
@@ -10,6 +10,7 @@ export const navItems = [
   { href: "/painel/contas", label: "Contas", icon: Users },
   { href: "/painel/cortes", label: "Cortes", icon: Scissors },
   { href: "/painel/agenda", label: "Agenda", icon: CalendarClock },
+  { href: "/painel/carteira", label: "Carteira", icon: Wallet },
   { href: "/painel/configuracoes", label: "Configurações", icon: Settings },
 ];
 

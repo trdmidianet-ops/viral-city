@@ -2,6 +2,7 @@ import { CheckCircle2, ImageUp, Plus, TriangleAlert, Unplug, X } from "lucide-re
 import { PageHeader } from "@/components/painel-ui";
 import { activePlatforms } from "@/components/platform-icons";
 import { canStoreAccounts, getAccountLogo, listAccounts, type Account } from "@/lib/accounts/store";
+import { requireUserId } from "@/lib/auth";
 import { isDbConfigured } from "@/lib/db";
 import { appUrl, isConfigured, providers, redirectUri } from "@/lib/oauth/providers";
 import { disconnectAccount, saveLogoAction } from "./actions";
@@ -15,7 +16,7 @@ export default async function ContasPage({
   searchParams: Promise<{ conectado?: string; erro?: string }>;
 }) {
   const { conectado, erro } = await searchParams;
-  const accounts = await listAccounts();
+  const accounts = await listAccounts(await requireUserId());
   const logos = isDbConfigured()
     ? Object.fromEntries(await Promise.all(accounts.map(async (a) => [a.id, await getAccountLogo(a.id)] as const)))
     : {};
@@ -30,7 +31,7 @@ export default async function ContasPage({
       {!canStore && (
         <p className="mb-6 flex items-center gap-2 rounded-xl border border-sun/30 bg-sun/10 px-4 py-3 text-sm text-sun">
           <TriangleAlert size={18} className="shrink-0" />
-          Na versão online, conectar contas depende do banco de dados (Supabase), que ainda não foi ativado. Por
+          Na versão online, conectar contas depende do banco de dados, que ainda não foi configurado. Por
           enquanto, conecte as contas pela versão no seu computador.
         </p>
       )}

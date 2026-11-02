@@ -1,5 +1,5 @@
 /**
- * Senha de acesso ao painel enquanto o login do Supabase não está ativo.
+ * Senha de acesso ao painel enquanto o login (Better Auth) não está configurado.
  * Roda no middleware (Edge), por isso usa Web Crypto.
  */
 export const GATE_COOKIE = "vc_gate";
@@ -21,8 +21,8 @@ export function safeNext(next: unknown): string {
 
 /** Confere o acesso dentro de uma rota (para rotas que não passam pelo middleware). */
 export async function hasAccess(cookieValue: string | undefined, loggedIn: () => Promise<boolean>): Promise<boolean> {
-  const { isSupabaseConfigured } = await import("@/lib/supabase/config");
-  if (isSupabaseConfigured) return loggedIn();
+  const { isAuthConfigured } = await import("@/lib/auth-config");
+  if (isAuthConfigured()) return loggedIn();
   const password = gatePassword();
   if (!password) return true;
   return cookieValue === (await gateToken(password));

@@ -2,7 +2,8 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { Readable } from "node:stream";
 import { isDbConfigured } from "@/lib/db";
-import { getClip } from "@/lib/clips/repo";
+import { currentUserId } from "@/lib/auth";
+import { getOwnedClip } from "@/lib/clips/repo";
 import { canUseLocalFiles, isInsideData } from "@/lib/clips/local-files";
 
 /** Serve a prévia do corte a partir do PC, com suporte a "Range" (avançar/voltar no player). */
@@ -11,7 +12,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!canUseLocalFiles() || !isDbConfigured() || !/^[0-9a-f-]{36}$/i.test(id)) {
     return new Response("Prévia disponível só no painel do PC.", { status: 404 });
   }
-  const clip = await getClip(id);
+  const userId = await currentUserId();
+  const clip = userId ? (await getOwnedClip(userId, id))?.clip : null;
   if (!clip?.local_path || !isInsideData(clip.local_path)) return new Response("Corte não encontrado.", { status: 404 });
 
   const { size } = await stat(clip.local_path).catch(() => ({ size: 0 }));

@@ -4,7 +4,8 @@ import { ArrowLeft, Check, RotateCcw, Sparkles, Star, Trash2 } from "lucide-reac
 import { PageHeader } from "@/components/painel-ui";
 import { getAccount } from "@/lib/accounts/store";
 import { canUseLocalFiles } from "@/lib/clips/local-files";
-import { getSource, listClips, type Clip } from "@/lib/clips/repo";
+import { getOwnedSource, listClips, type Clip } from "@/lib/clips/repo";
+import { requireUserId } from "@/lib/auth";
 import { isDbConfigured } from "@/lib/db";
 import { approveClipAction, deleteSourceAction, retrySourceAction, updateHookAction, updateStyleAction } from "../actions";
 import { clipStatus, sourceStatus } from "../status";
@@ -18,7 +19,7 @@ const field = "rounded-lg border border-line bg-night/60 px-3 py-2 text-sm outli
 export default async function SourcePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isDbConfigured() || !/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const source = await getSource(id);
+  const source = await getOwnedSource(await requireUserId(), id);
   if (!source) notFound();
   const [clips, account] = await Promise.all([listClips(id), source.account_id ? getAccount(source.account_id) : null]);
 

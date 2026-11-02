@@ -6,6 +6,7 @@ import { decrypt, encrypt } from "./crypto";
 import { getTokens, listAccounts, removeAccount, upsertAccount } from "./store";
 
 let dir: string;
+const U = "local";
 
 beforeAll(async () => {
   dir = await mkdtemp(path.join(tmpdir(), "viral-city-"));
@@ -35,11 +36,11 @@ describe("store", () => {
   const profile = { platform: "youtube" as const, externalId: "UC123", name: "Canal A", scopes: ["s"] };
 
   it("começa vazio", async () => {
-    expect(await listAccounts()).toEqual([]);
+    expect(await listAccounts(U)).toEqual([]);
   });
 
   it("guarda conta sem expor tokens e com tokens criptografados no disco", async () => {
-    const acc = await upsertAccount(profile, { accessToken: "AT-1", refreshToken: "RT-1" });
+    const acc = await upsertAccount(U, profile, { accessToken: "AT-1", refreshToken: "RT-1" });
     expect(acc).not.toHaveProperty("tokens");
     const raw = await readFile(path.join(dir, "accounts.json"), "utf8");
     expect(raw).not.toContain("AT-1");
@@ -47,25 +48,25 @@ describe("store", () => {
   });
 
   it("reconectar a mesma conta atualiza em vez de duplicar", async () => {
-    const [before] = await listAccounts();
-    const again = await upsertAccount({ ...profile, name: "Canal A (novo nome)" }, { accessToken: "AT-2" });
+    const [before] = await listAccounts(U);
+    const again = await upsertAccount(U, { ...profile, name: "Canal A (novo nome)" }, { accessToken: "AT-2" });
     expect(again.id).toBe(before.id);
     expect(again.connectedAt).toBe(before.connectedAt);
-    expect(await listAccounts()).toHaveLength(1);
+    expect(await listAccounts(U)).toHaveLength(1);
     expect((await getTokens(again.id))?.accessToken).toBe("AT-2");
   });
 
   it("permite várias contas e filtra por plataforma", async () => {
-    await upsertAccount({ ...profile, externalId: "UC999", name: "Canal B" }, { accessToken: "x" });
-    await upsertAccount({ ...profile, platform: "tiktok", externalId: "open1", name: "TT" }, { accessToken: "y" });
-    expect(await listAccounts("youtube")).toHaveLength(2);
-    expect(await listAccounts("tiktok")).toHaveLength(1);
+    await upsertAccount(U, { ...profile, externalId: "UC999", name: "Canal B" }, { accessToken: "x" });
+    await upsertAccount(U, { ...profile, platform: "tiktok", externalId: "open1", name: "TT" }, { accessToken: "y" });
+    expect(await listAccounts(U, "youtube")).toHaveLength(2);
+    expect(await listAccounts(U, "tiktok")).toHaveLength(1);
   });
 
   it("remove conta", async () => {
-    const [first] = await listAccounts("tiktok");
-    expect(await removeAccount(first.id)).toBe(true);
-    expect(await removeAccount(first.id)).toBe(false);
-    expect(await listAccounts("tiktok")).toHaveLength(0);
+    const [first] = await listAccounts(U, "tiktok");
+    expect(await removeAccount(U, first.id)).toBe(true);
+    expect(await removeAccount(U, first.id)).toBe(false);
+    expect(await listAccounts(U, "tiktok")).toHaveLength(0);
   });
 });
