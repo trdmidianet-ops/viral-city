@@ -227,6 +227,10 @@ export default function Home() {
       <footer className="border-t border-line py-8">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 text-sm text-muted sm:flex-row">
           <Logo />
+          <div className="flex gap-5">
+            <Link href="/privacidade" className="hover:text-ink">Privacidade</Link>
+            <Link href="/termos" className="hover:text-ink">Termos de uso</Link>
+          </div>
           <p>© {new Date().getFullYear()} Viral City. Todos os direitos reservados.</p>
         </div>
       </footer>
