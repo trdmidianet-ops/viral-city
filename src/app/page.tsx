@@ -6,7 +6,8 @@ import { HeroCity, HeroPhone, HeroReveal } from "@/components/hero3d/hero-3d";
 import { YoutubeIcon } from "@/components/platform-icons";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { Features } from "@/components/landing/features";
-import { Faq, FinalCta, Footer, FormatsMarquee } from "@/components/landing/closing";
+import { ShortsShowcase } from "@/components/landing/showcase";
+import { Faq, FinalCta, Footer } from "@/components/landing/closing";
 import "./landing.css";
 
 export default function Home() {
@@ -76,7 +77,7 @@ export default function Home() {
         </div>
       </section>
 
-      <FormatsMarquee />
+      <ShortsShowcase />
       <HowItWorks />
       <Features />
       <Faq />

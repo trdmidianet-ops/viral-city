@@ -231,14 +231,17 @@
   pointer-events: none;
 }
 
-/* ---------- letreiro de formatos ---------- */
-.vc-marquee {
-  mask-image: linear-gradient(90deg, transparent, black 12%, black 88%, transparent);
+/* ---------- vitrine de Shorts ---------- */
+.vc-showcase {
+  background: radial-gradient(ellipse 50% 60% at 50% 60%, rgba(255, 46, 136, 0.12), transparent 70%);
 }
-.vc-marquee-track {
-  animation: vc-marquee 36s linear infinite;
+.vc-showcase-row {
+  mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
 }
-.vc-marquee:hover .vc-marquee-track {
+.vc-showcase-track {
+  animation: vc-marquee 55s linear infinite;
+}
+.vc-showcase-row:hover .vc-showcase-track {
   animation-play-state: paused;
 }
 @keyframes vc-marquee {
@@ -246,14 +249,25 @@
     transform: translateX(-50%);
   }
 }
-.vc-outline {
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(255, 46, 136, 0.9);
-  text-shadow: 0 0 18px rgba(255, 46, 136, 0.35);
-  transition: color 0.3s ease;
+.vc-short {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 24px 50px -20px rgba(255, 46, 136, 0.55);
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
-.vc-outline:hover {
-  color: var(--ink);
+.vc-short:nth-child(even) {
+  transform: translateY(18px);
+}
+.vc-short:hover {
+  transform: translateY(-6px) scale(1.04);
+  box-shadow: 0 0 0 1px rgba(255, 46, 136, 0.6), 0 30px 60px -18px rgba(255, 46, 136, 0.85);
+}
+.vc-progress {
+  width: 0;
+  animation: vc-progress 8s linear infinite;
+}
+@keyframes vc-progress {
+  to {
+    width: 100%;
+  }
 }
 
 /* ---------- FAQ ---------- */
@@ -372,7 +386,8 @@
   .vc-word,
   .vc-sweep,
   .vc-blip,
-  .vc-marquee-track,
+  .vc-showcase-track,
+  .vc-progress,
   .vc-cta-floor,
   .vc-cta-float,
   .vc-cta-glow,

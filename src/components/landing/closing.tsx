@@ -3,30 +3,6 @@ import { Logo, LogoMark } from "@/components/brand";
 import { Reveal } from "./reveal";
 import { Accent, SectionTitle } from "./section-title";
 
-const FORMATS = ["Podcasts", "Aulas", "Lives", "Entrevistas", "Vlogs", "Palestras", "Cursos", "Bate-papos"];
-
-/** Letreiro neon correndo com os formatos que mais rendem cortes. */
-export function FormatsMarquee() {
-  const row = (hidden: boolean) => (
-    <div className="vc-marquee-row flex shrink-0 items-center" aria-hidden={hidden || undefined}>
-      {FORMATS.map((f) => (
-        <span key={f} className="flex items-center">
-          <span className="vc-outline px-6 font-serif text-4xl italic sm:text-5xl">{f}</span>
-          <span className="text-xl text-pink">✦</span>
-        </span>
-      ))}
-    </div>
-  );
-  return (
-    <div className="vc-marquee relative overflow-hidden border-y border-line bg-night-2/70 py-6">
-      <div className="vc-marquee-track flex w-max">
-        {row(false)}
-        {row(true)}
-      </div>
-    </div>
-  );
-}
-
 const faqs = [
   {
     q: "Posso cortar vídeos de outros canais?",

@@ -99,7 +99,7 @@ export function FramingPreview() {
   );
 }
 
-function Person({ big = false }: { big?: boolean }) {
+export function Person({ big = false }: { big?: boolean }) {
   return (
     <div className={`absolute bottom-0 left-1/2 -translate-x-1/2 ${big ? "w-[70%]" : "w-[38%]"}`}>
       <div className="mx-auto aspect-square w-[42%] rounded-full bg-night/80" />
