@@ -143,7 +143,17 @@ async function clipsQueue() {
       const account = source.account_id ? await getAccount(source.account_id) : null;
       const logo = source.use_logo && account ? await getAccountLogo(account.id) : null;
       const file = await renderClip(
-        { clip, sourcePath: source.local_path, words: source.transcript, framing: source.framing, captions: source.captions, logo },
+        {
+          clip,
+          sourcePath: source.local_path,
+          words: source.transcript,
+          framing: clip.framing ?? source.framing,
+          captions: clip.captions ?? source.captions,
+          logo,
+          highlight: clip.caption_color,
+          hookPosition: clip.hook_position,
+          speed: Number(clip.speed) || 1,
+        },
         CLIPS_DIR,
       );
       await updateClip(clip.id, { status: "rendered", local_path: file });

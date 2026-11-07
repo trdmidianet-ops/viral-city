@@ -8,6 +8,7 @@ import { MIN_SOURCE_COINS, formatCoins } from "@/lib/coins/pricing";
 import { getBalance } from "@/lib/coins/wallet";
 import { createSource, deleteSource, getOwnedClip, getOwnedSource, listClips, updateClip, updateSource, type Framing, type Language, type SourceKind } from "@/lib/clips/repo";
 import { canUseLocalFiles, uploadPath } from "@/lib/clips/local-files";
+import { parseClipEdit } from "@/lib/clips/edit";
 import { isDbConfigured } from "@/lib/db";
 import { listChannelUploads } from "@/lib/youtube/channel";
 import { niches } from "@/lib/youtube/niches";
@@ -145,4 +146,35 @@ export async function approveClipAction(form: FormData) {
   });
   await updateClip(id, { status: "approved", video_id: video.id });
   revalidatePath(`/painel/cortes/${source.id}`);
+}
+
+export type EditState = { error?: string; saved?: boolean };
+
+/** Editor de clipes: grava trecho, texto e estilo do corte e manda renderizar de novo. */
+export async function saveClipEditAction(_: EditState, form: FormData): Promise<EditState> {
+  const id = str(form, "id", 40);
+  if (!isDbConfigured() || !UUID.test(id)) return { error: "Corte inválido." };
+  const owned = await getOwnedClip(await requireUserId(), id);
+  if (!owned) return { error: "Corte não encontrado." };
+  if (owned.clip.status === "approved") return { error: "Esse corte já foi aprovado para a Agenda e não pode mais ser editado." };
+  if (owned.clip.status === "rendering") return { error: "Espere a renderização atual terminar." };
+
+  const parsed = parseClipEdit(
+    {
+      start: str(form, "start", 20),
+      end: str(form, "end", 20),
+      hook: str(form, "hook", 120),
+      hookPosition: str(form, "hook_position", 10),
+      framing: str(form, "framing", 10),
+      captions: form.get("captions") === "on",
+      captionColor: str(form, "caption_color", 10),
+      speed: str(form, "speed", 5),
+    },
+    Number(owned.source.duration_seconds ?? 0),
+  );
+  if ("error" in parsed) return { error: parsed.error };
+  await updateClip(id, { ...parsed.patch, status: "pending" });
+  revalidatePath(`/painel/cortes/${owned.source.id}`);
+  revalidatePath(`/painel/editor/${id}`);
+  return { saved: true };
 }

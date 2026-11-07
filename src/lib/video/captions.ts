@@ -34,6 +34,23 @@ export type AssOptions = {
   font: string;
   /** Legendas palavra a palavra. */
   captions: boolean;
+  /** Cor da palavra falada (padrão laranja). */
+  highlight?: CaptionColor;
+  /** Onde fica o gancho (padrão no topo). */
+  hookPosition?: HookPosition;
+};
+
+export type CaptionColor = "orange" | "yellow" | "green" | "cyan" | "pink" | "white";
+export type HookPosition = "top" | "middle" | "none";
+
+/** Cores da palavra destacada, no formato ASS (&HBBGGRR). */
+export const CAPTION_COLORS: Record<CaptionColor, { label: string; hex: string; ass: string }> = {
+  orange: { label: "Laranja", hex: "#ff8a3d", ass: "&H003D8AFF&" },
+  yellow: { label: "Amarelo", hex: "#ffd166", ass: "&H0066D1FF&" },
+  green: { label: "Verde", hex: "#4ade80", ass: "&H0080DE4A&" },
+  cyan: { label: "Ciano", hex: "#22d3ee", ass: "&H00EED322&" },
+  pink: { label: "Rosa", hex: "#ff2e88", ass: "&H00882EFF&" },
+  white: { label: "Branco", hex: "#ffffff", ass: "&H00FFFFFF&" },
 };
 
 /**
@@ -51,14 +68,17 @@ export function buildAss(words: TimedWord[], opts: AssOptions): string {
     "[V4+ Styles]",
     "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding",
     `Style: Caption,${opts.font},88,&H00FFFFFF,&H00FFFFFF,&H00180B0B,&H96000000,1,0,0,0,100,100,0,0,1,7,3,2,80,80,460,1`,
-    `Style: Hook,${opts.font},70,&H00FFFFFF,&H00FFFFFF,&H00882EFF,&H96000000,1,0,0,0,100,100,0,0,3,18,0,8,90,90,250,1`,
+    opts.hookPosition === "middle"
+      ? `Style: Hook,${opts.font},76,&H00FFFFFF,&H00FFFFFF,&H00882EFF,&H96000000,1,0,0,0,100,100,0,0,3,18,0,5,90,90,0,1`
+      : `Style: Hook,${opts.font},70,&H00FFFFFF,&H00FFFFFF,&H00882EFF,&H96000000,1,0,0,0,100,100,0,0,3,18,0,8,90,90,250,1`,
     "",
     "[Events]",
     "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
   ];
 
   const events: string[] = [];
-  const hook = escapeAss(opts.hook);
+  const hook = opts.hookPosition === "none" ? "" : escapeAss(opts.hook);
+  const color = CAPTION_COLORS[opts.highlight ?? "orange"].ass;
   if (hook) {
     events.push(`Dialogue: 1,${assTime(0)},${assTime(opts.hookUntil)},Hook,,0,0,0,,${hook.toUpperCase()}`);
   }
@@ -76,7 +96,8 @@ export function buildAss(words: TimedWord[], opts: AssOptions): string {
         const text = timed
           .map((x, j) => {
             const t = escapeAss(x.text.toUpperCase());
-            return j === i ? `{\\c&H003D8AFF&}${t}{\\c&H00FFFFFF&}` : t;
+            // palavra falada: cor escolhida e um leve "pulo" de tamanho (visível até no branco)
+            return j === i ? `{\\c${color}\\fscx112\\fscy112}${t}{\\c&H00FFFFFF&\\fscx100\\fscy100}` : t;
           })
           .join(" ");
         events.push(`Dialogue: 0,${assTime(w.start)},${assTime(end)},Caption,,0,0,0,,${text}`);

@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { copyFile, mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { buildAss } from "@/lib/video/captions";
+import { buildAss, type CaptionColor, type HookPosition } from "@/lib/video/captions";
 import { ffmpeg } from "./ffmpeg";
 import { wordsInRange } from "./pick";
 import type { Clip, Framing, Word } from "./repo";
@@ -55,6 +55,10 @@ export type RenderClipInput = {
   framing: Framing;
   captions: boolean;
   logo: string | null;
+  highlight?: CaptionColor;
+  hookPosition?: HookPosition;
+  /** Velocidade do corte (1 = normal). As legendas são gravadas no tempo original e aceleram junto. */
+  speed?: number;
 };
 
 /** Renderiza um corte vertical com enquadramento, texto no topo, logo e legendas. */
@@ -68,15 +72,29 @@ export async function renderClip(input: RenderClipInput, baseDir: string): Promi
   const words = wordsInRange(input.words, start, start + duration);
   await writeFile(
     path.join(dir, "captions.ass"),
-    buildAss(words, { hook: input.clip.hook, hookUntil: duration, font, captions: input.captions }),
+    buildAss(words, {
+      hook: input.clip.hook,
+      hookUntil: duration,
+      font,
+      captions: input.captions,
+      highlight: input.highlight,
+      hookPosition: input.hookPosition,
+    }),
     "utf8",
   );
 
   const logo = input.logo ? await writeLogo(input.logo, dir) : null;
   const filters = [framingFilter(input.framing), "[base]ass=captions.ass:fontsdir=.[sub]"];
+  let last = "sub";
   if (logo) {
     filters.push("[1:v]scale=150:150:force_original_aspect_ratio=decrease,format=rgba,colorchannelmixer=aa=0.92[lg]");
     filters.push("[sub][lg]overlay=40:60[out]");
+    last = "out";
+  }
+  const speed = input.speed && input.speed !== 1 ? input.speed : 1;
+  if (speed !== 1) {
+    filters.push(`[${last}]setpts=PTS/${speed}[fast]`);
+    last = "fast";
   }
 
   await ffmpeg(
@@ -87,8 +105,9 @@ export async function renderClip(input: RenderClipInput, baseDir: string): Promi
       "-i", path.resolve(input.sourcePath),
       ...(logo ? ["-i", logo] : []),
       "-filter_complex", filters.join(";"),
-      "-map", logo ? "[out]" : "[sub]",
+      "-map", `[${last}]`,
       "-map", "0:a:0?",
+      ...(speed !== 1 ? ["-af", `atempo=${speed}`] : []),
       "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p", "-r", "30",
       "-c:a", "aac", "-b:a", "160k",
       "-movflags", "+faststart",

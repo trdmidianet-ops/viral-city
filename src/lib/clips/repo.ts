@@ -1,4 +1,5 @@
 import { insertRow, query, queryOne, updateRows } from "@/lib/db";
+import type { CaptionColor, HookPosition } from "@/lib/video/captions";
 
 export type SourceKind = "channel" | "file" | "link";
 export type Framing = "center" | "blur" | "split";
@@ -56,6 +57,12 @@ export type Clip = {
   error: string | null;
   local_path: string | null;
   video_id: string | null;
+  /** Ajustes do editor (null = usa o do vídeo longo). */
+  framing: Framing | null;
+  captions: boolean | null;
+  caption_color: CaptionColor;
+  speed: number;
+  hook_position: HookPosition;
   created_at: string;
   updated_at: string;
 };
@@ -80,6 +87,11 @@ export async function listSources(userId: string, limit = 30): Promise<Source[]>
 /** Fonte do usuário (painel). */
 export async function getOwnedSource(userId: string, id: string): Promise<Source | null> {
   return queryOne<Source>(`select ${LIST_COLS} from vc_sources where id = $1 and user_id = $2`, [id, userId]);
+}
+
+/** Fonte do usuário com a transcrição (editor de clipes). */
+export async function getOwnedSourceWithTranscript(userId: string, id: string): Promise<Source | null> {
+  return queryOne<Source>("select * from vc_sources where id = $1 and user_id = $2", [id, userId]);
 }
 
 /** Fonte pelo ID, sem checar dono: uso interno do worker. */
