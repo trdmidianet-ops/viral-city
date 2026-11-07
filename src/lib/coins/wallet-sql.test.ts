@@ -128,3 +128,62 @@ describe("administrador", () => {
     expect(await check("impostor")).toBe(false);
   });
 });
+
+describe("Indique e Ganhe no banco", () => {
+  const apply = async (user: string, code: string, cap = 20) =>
+    (await one<{ r: string }>("select vc_apply_referral($1, $2, 100, 7, $3) as r", [user, code, cap])).r;
+  const bal = async (user: string) => Number((await one<{ balance: string }>("select balance from vc_wallets where user_id = $1", [user]))?.balance ?? 0);
+  async function newUser(id: string) {
+    await db.query(`insert into "user" ("id", "name", "email", "updatedAt") values ($1, 'x', $2, now())`, [id, `${id}@exemplo.com`]);
+  }
+  async function buy(user: string, session: string, coins: number) {
+    await db.query(
+      "insert into vc_purchases (user_id, stripe_session_id, currency, amount_minor, usd_cents, coins, usd_rate) values ($1, $2, 'usd', $3, $3, $3, 1)",
+      [user, session, coins],
+    );
+    return one<{ v: string | null }>("select vc_credit_purchase($1) as v", [session]);
+  }
+
+  beforeAll(async () => {
+    await newUser("torres");
+    await newUser("amigo");
+    await newUser("amigo2");
+    await db.query("insert into vc_referral_codes (code, user_id) values ('TORRES10', 'torres')");
+  });
+
+  it("recusa cupom inexistente e o próprio cupom", async () => {
+    expect(await apply("amigo", "NAOEXISTE")).toBe("cupom_invalido");
+    expect(await apply("torres", "torres10")).toBe("proprio_cupom");
+  });
+
+  it("aplica o cupom uma única vez e dá o bônus de cadastro", async () => {
+    expect(await apply("amigo", " torres10 ")).toBe("ok");
+    expect(await bal("amigo")).toBe(100);
+    expect(await apply("amigo", "TORRES10")).toBe("ja_indicado");
+    expect(await bal("amigo")).toBe(100);
+  });
+
+  it("primeira compra: indicado ganha +10% e quem indicou ganha 10%; depois só a comissão", async () => {
+    expect(Number((await buy("amigo", "cs_ref_1", 1000)).v)).toBe(100 + 1000 + 100);
+    expect(await bal("torres")).toBe(100);
+    // o webhook chegando de novo não paga nada a mais
+    expect((await buy("amigo", "cs_ref_1", 1000).catch(() => ({ v: null }))).v ?? null).toBeNull();
+    expect(Number((await one<{ v: string | null }>("select vc_credit_purchase('cs_ref_1') as v")).v ?? 0)).toBe(0);
+    // segunda compra: sem bônus para o indicado, 10% para quem indicou
+    expect(Number((await buy("amigo", "cs_ref_2", 500)).v)).toBe(1200 + 500);
+    expect(await bal("torres")).toBe(150);
+    expect(Number((await one<{ n: string }>("select count(*) as n from vc_referral_earnings where referrer_user_id = 'torres'")).n)).toBe(2);
+  });
+
+  it("depois de comprar, não dá mais para usar cupom", async () => {
+    await db.query("insert into vc_referral_codes (code, user_id) values ('AMIGO10', 'amigo')");
+    await buy("amigo2", "cs_ref_3", 200);
+    expect(await apply("amigo2", "AMIGO10")).toBe("ja_comprou");
+  });
+
+  it("acima do limite diário, o indicado entra sem o bônus de cadastro", async () => {
+    await newUser("amigo3");
+    expect(await apply("amigo3", "TORRES10", 1)).toBe("ok");
+    expect(await bal("amigo3")).toBe(0);
+  });
+});

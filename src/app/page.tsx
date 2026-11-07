@@ -9,10 +9,12 @@ import { Features } from "@/components/landing/features";
 import { ShortsShowcase } from "@/components/landing/showcase";
 import { Faq, FinalCta, Footer } from "@/components/landing/closing";
 import "./landing.css";
+import { RefCapture } from "@/components/ref-capture";
 
 export default function Home() {
   return (
     <div className="min-h-screen overflow-x-hidden">
+      <RefCapture />
       <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-night/85">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <Logo />

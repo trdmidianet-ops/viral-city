@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { isAuthConfigured } from "@/lib/auth-config";
 import { auth } from "@/lib/better-auth";
 import { safeNext } from "@/lib/gate";
+import { isDbConfigured } from "@/lib/db";
+import { applyReferral } from "@/lib/referrals";
 
 export type AuthState = { error?: string; message?: string };
 
@@ -34,8 +36,11 @@ export async function signUp(_: AuthState, formData: FormData): Promise<AuthStat
   const { email, password, next } = credentials(formData);
   if (!isAuthConfigured()) redirect(next);
   if (password.length < 8) return { error: "A senha precisa ter pelo menos 8 caracteres." };
+  const coupon = String(formData.get("coupon") ?? "").trim().slice(0, 40);
   try {
-    await auth().api.signUpEmail({ body: { email, password, name: email.split("@")[0] }, headers: await headers() });
+    const res = await auth().api.signUpEmail({ body: { email, password, name: email.split("@")[0] }, headers: await headers() });
+    // cupom de indicação: bônus de cadastro já na criação da conta (erro aqui não impede o cadastro)
+    if (coupon && isDbConfigured() && res?.user?.id) await applyReferral(res.user.id, coupon).catch(() => null);
   } catch (err) {
     if (err instanceof APIError) {
       const msg = String(err.body?.message ?? "");

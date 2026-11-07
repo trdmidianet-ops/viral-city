@@ -2,18 +2,22 @@
 
 import { createAuthClient } from "better-auth/react";
 import { useActionState, useState } from "react";
+import { writeRefCookie } from "@/components/ref-capture";
 import { signIn, signUp, type AuthState } from "./actions";
 
 const authClient = createAuthClient();
 
-export function AuthForm({ mode, next, google }: { mode: "signin" | "signup"; next: string; google: boolean }) {
+export function AuthForm({ mode, next, google, coupon = "" }: { mode: "signin" | "signup"; next: string; google: boolean; coupon?: string }) {
   const [state, action, pending] = useActionState<AuthState, FormData>(mode === "signup" ? signUp : signIn, {});
   const [googleError, setGoogleError] = useState("");
   const [googlePending, setGooglePending] = useState(false);
+  const [code, setCode] = useState(coupon);
 
   async function withGoogle() {
     setGoogleError("");
     setGooglePending(true);
+    // o cupom vai junto: é aplicado quando a conta chega no painel
+    if (mode === "signup" && code) writeRefCookie(code);
     const res = await authClient.signIn.social({ provider: "google", callbackURL: next });
     if (res.error) {
       setGooglePending(false);
@@ -69,6 +73,21 @@ export function AuthForm({ mode, next, google }: { mode: "signin" | "signup"; ne
             className="mt-1 w-full rounded-lg border border-line bg-night/60 px-3 py-2.5 outline-none focus:border-pink"
           />
         </label>
+
+        {mode === "signup" && (
+          <label className="block text-sm">
+            <span className="text-muted">Cupom de indicação (opcional)</span>
+            <input
+              name="coupon"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              maxLength={20}
+              placeholder="Ex.: TORRES10"
+              className="mt-1 w-full rounded-lg border border-line bg-night/60 px-3 py-2.5 uppercase outline-none focus:border-pink"
+            />
+            {code && <span className="mt-1 block text-xs text-sun">Ganhe 100 CityCoins agora e +10% na primeira recarga.</span>}
+          </label>
+        )}
 
         {state.error && <p className="text-sm text-pink">{state.error}</p>}
         {state.message && <p className="text-sm text-cyan">{state.message}</p>}

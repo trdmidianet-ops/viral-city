@@ -10,6 +10,7 @@ import { isAdminUser } from "@/lib/admin";
 import { isAuthConfigured } from "@/lib/auth-config";
 import { gatePassword } from "@/lib/gate";
 import { PainelNav } from "./nav";
+import { ReferralClaim } from "./referral-claim";
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
@@ -53,7 +54,10 @@ export default async function PainelLayout({ children }: { children: React.React
             Painel aberto: defina APP_PASSWORD em <code>.env.local</code> para proteger o acesso.
           </div>
         )}
-        <main className="mx-auto max-w-6xl p-4 sm:p-8">{children}</main>
+        <main className="mx-auto max-w-6xl p-4 sm:p-8">
+          {authOn && user && isDbConfigured() && <ReferralClaim />}
+          {children}
+        </main>
       </div>
     </div>
   );

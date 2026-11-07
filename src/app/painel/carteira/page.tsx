@@ -6,7 +6,9 @@ import { COINS_PER_MINUTE, MIN_SOURCE_COINS, costForDuration, formatCoins, type 
 import { isStripeConfigured, settleCheckout } from "@/lib/coins/stripe";
 import { getBalance, listLedger, usdRates, type LedgerEntry } from "@/lib/coins/wallet";
 import { isDbConfigured } from "@/lib/db";
+import { canUseCoupon } from "@/lib/referrals";
 import { BuyForm } from "./buy-form";
+import { CouponForm } from "./coupon-form";
 
 export const dynamic = "force-dynamic";
 
@@ -44,10 +46,11 @@ export default async function CarteiraPage({
     credited = (await settleCheckout(session_id, userId).catch(() => null)) !== null;
   }
 
-  const [balance, ledger, rates] = await Promise.all([
+  const [balance, ledger, rates, couponOpen] = await Promise.all([
     getBalance(userId),
     listLedger(userId),
     usdRates().catch((): UsdRates | null => null),
+    canUseCoupon(userId).catch(() => false),
   ]);
   const payments = isStripeConfigured();
 
@@ -66,6 +69,8 @@ export default async function CarteiraPage({
           <X size={18} /> Pagamento cancelado. Nada foi cobrado.
         </p>
       )}
+
+      {couponOpen && <CouponForm />}
 
       <div className="grid gap-6 lg:grid-cols-5">
         <section className="glass relative overflow-hidden rounded-2xl p-6 lg:col-span-2">
