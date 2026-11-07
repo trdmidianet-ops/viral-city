@@ -46,7 +46,13 @@ export default async function ScalePage({ searchParams }: { searchParams: Promis
         <div className="xl:col-span-3">
           <ScaleForm
             clips={clips.map((c) => ({ id: c.id, label: `${c.hook || c.source_title}`.slice(0, 70), score: c.score }))}
-            accounts={accounts.map((a) => ({ id: a.id, name: `${a.name} (${a.platform})`, handle: a.handle ? `@${a.handle.replace(/^@/, "")}` : "" }))}
+            accounts={accounts.map((a) => ({
+              id: a.id,
+              name: a.name,
+              label: `${a.name} (${a.platform})`,
+              handle: a.handle ? `@${a.handle.replace(/^@/, "")}` : "",
+              avatarUrl: a.avatarUrl ?? null,
+            }))}
             localFiles={canUseLocalFiles()}
             initial={{ clipId: one(params, "corte", 40), template: isTemplateId(template) ? template : "", count }}
           />

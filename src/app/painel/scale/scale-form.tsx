@@ -3,13 +3,13 @@
 import { useActionState, useState } from "react";
 import { Clapperboard, FileVideo, Layers, Sparkles } from "lucide-react";
 import { COINS_PER_VARIATION, MAX_VARIATIONS, formatCoins } from "@/lib/coins/pricing";
-import { TEMPLATES, type TemplateId } from "@/lib/scale/templates";
+import { TEMPLATES, usesCta, type TemplateId } from "@/lib/scale/templates";
 import { createScaleAction, type ScaleFormState } from "./actions";
-import { TemplateThumb } from "./template-thumb";
+import { SAMPLE_PROFILE, TemplateThumb } from "./template-thumb";
 import { useUpload } from "../use-upload";
 
 type ClipOption = { id: string; label: string; score: number };
-type Account = { id: string; name: string; handle: string };
+type Account = { id: string; name: string; label: string; handle: string; avatarUrl: string | null };
 
 type Props = {
   clips: ClipOption[];
@@ -24,17 +24,33 @@ export function ScaleForm({ clips, accounts, localFiles, initial }: Props) {
   const [state, action, pending] = useActionState<ScaleFormState, FormData>(createScaleAction, {});
   const [base, setBase] = useState<"clip" | "file">(clips.length || !localFiles ? "clip" : "file");
   const [count, setCount] = useState(initial.count);
-  const [selected, setSelected] = useState<TemplateId[]>(initial.template ? [initial.template] : ["manchete", "caixa", "urgente"]);
+  const [selected, setSelected] = useState<TemplateId[]>(initial.template ? [initial.template] : ["perfil", "perfil-cta", "tweet-escuro"]);
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const { upload, progress, error: uploadError, send } = useUpload();
 
   const toggle = (id: TemplateId) =>
     setSelected((cur) => (cur.includes(id) ? (cur.length > 1 ? cur.filter((t) => t !== id) : cur) : [...cur, id]));
-  const handle = accounts.find((a) => a.id === accountId)?.handle ?? "";
+  const account = accounts.find((a) => a.id === accountId);
+  const [name, setName] = useState(account?.name ?? SAMPLE_PROFILE.name);
+  const [handle, setHandle] = useState(account?.handle ?? SAMPLE_PROFILE.handle);
+  const [verified, setVerified] = useState(true);
+  const [headlines, setHeadlines] = useState("");
+  const [cta, setCta] = useState("se você curte gta 6, precisa seguir essa página");
+  const [previewIndex, setPreviewIndex] = useState(0);
+  const preview = selected[Math.min(previewIndex, selected.length - 1)] ?? "perfil";
+  const firstHeadline = headlines.split(/\r?\n/).map((h) => h.trim()).find(Boolean);
+
+  function chooseAccount(id: string) {
+    setAccountId(id);
+    const a = accounts.find((x) => x.id === id);
+    setName(a?.name ?? SAMPLE_PROFILE.name);
+    setHandle(a?.handle ?? SAMPLE_PROFILE.handle);
+  }
 
   return (
-    <form action={action} className="glass space-y-6 rounded-2xl p-5 sm:p-6">
+    <form action={action} className="glass grid gap-6 rounded-2xl p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_220px]">
       <input type="hidden" name="base" value={base} />
+      <div className="min-w-0 space-y-6">
 
       {/* 1. vídeo base */}
       <fieldset>
@@ -102,12 +118,22 @@ export function ScaleForm({ clips, accounts, localFiles, initial }: Props) {
       <fieldset>
         <legend className="text-sm font-semibold">2. Templates</legend>
         <p className="text-xs text-muted">Escolha um ou mais; as versões se revezam entre eles.</p>
-        <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6">
+        <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-6 lg:grid-cols-3 2xl:grid-cols-6">
           {TEMPLATES.map((t) => {
             const on = selected.includes(t.id);
             return (
               <label key={t.id} className={`cursor-pointer rounded-xl border p-1.5 text-center transition ${on ? "border-pink bg-pink/10" : "border-line hover:border-white/20"}`}>
-                <input type="checkbox" name="templates" value={t.id} checked={on} onChange={() => toggle(t.id)} className="sr-only" />
+                <input
+                  type="checkbox"
+                  name="templates"
+                  value={t.id}
+                  checked={on}
+                  onChange={() => {
+                    toggle(t.id);
+                    setPreviewIndex(Math.max(0, selected.indexOf(t.id)));
+                  }}
+                  className="sr-only"
+                />
                 <TemplateThumb id={t.id} />
                 <span className="mt-1.5 block text-[11px] leading-tight">{t.name}</span>
               </label>
@@ -125,7 +151,14 @@ export function ScaleForm({ clips, accounts, localFiles, initial }: Props) {
         </label>
         <label className="block text-sm">
           <span className="text-muted">Suas manchetes (uma por linha, opcional)</span>
-          <textarea name="headlines" rows={4} placeholder={"Ninguém viu esse detalhe no trailer\nO mapa é 2x maior que o do GTA 5"} className={field} />
+          <textarea
+            name="headlines"
+            rows={4}
+            value={headlines}
+            onChange={(e) => setHeadlines(e.target.value)}
+            placeholder={"viu tudo do gta 6 ainda?\nninguém percebeu esse detalhe no trailer"}
+            className={field}
+          />
         </label>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" name="use_ai" defaultChecked className="accent-pink" />
@@ -133,10 +166,43 @@ export function ScaleForm({ clips, accounts, localFiles, initial }: Props) {
         </label>
       </fieldset>
 
-      {/* 4. quantidade e destino */}
-      <fieldset className="grid gap-4 sm:grid-cols-3">
-        <legend className="mb-2 text-sm font-semibold sm:col-span-3">4. Quantidade e destino</legend>
+      {/* 4. perfil que aparece no vídeo */}
+      <fieldset className="grid gap-4 sm:grid-cols-2">
+        <legend className="mb-2 text-sm font-semibold sm:col-span-2">4. Perfil no vídeo</legend>
         <label className="block text-sm">
+          <span className="text-muted">Conta (foto, nome e destino da postagem)</span>
+          <select name="account" value={accountId} onChange={(e) => chooseAccount(e.target.value)} className={field}>
+            <option value="">Conta de exemplo (Viral City)</option>
+            {accounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="block text-sm">
+          <span className="text-muted">Nome da página</span>
+          <input name="profile_name" maxLength={40} value={name} onChange={(e) => setName(e.target.value)} placeholder="Portal GTA 6" className={field} />
+        </label>
+        <label className="block text-sm">
+          <span className="text-muted">@ no vídeo</span>
+          <input name="handle" maxLength={40} value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="@seucanal" className={field} />
+        </label>
+        <label className="flex items-center gap-2 self-end pb-3 text-sm">
+          <input type="checkbox" name="verified" checked={verified} onChange={(e) => setVerified(e.target.checked)} className="accent-pink" /> Selo azul de verificado
+        </label>
+        {selected.some(usesCta) && (
+          <label className="block text-sm sm:col-span-2">
+            <span className="text-muted">Chamada de baixo (template Página + chamada)</span>
+            <input name="cta" maxLength={90} value={cta} onChange={(e) => setCta(e.target.value)} className={field} />
+          </label>
+        )}
+      </fieldset>
+
+      {/* 5. quantidade */}
+      <fieldset>
+        <legend className="mb-2 text-sm font-semibold">5. Quantidade</legend>
+        <label className="block max-w-[10rem] text-sm">
           <span className="text-muted">Versões</span>
           <input
             name="count"
@@ -147,21 +213,6 @@ export function ScaleForm({ clips, accounts, localFiles, initial }: Props) {
             onChange={(e) => setCount(Math.min(MAX_VARIATIONS, Math.max(1, Number(e.target.value) || 1)))}
             className={field}
           />
-        </label>
-        <label className="block text-sm">
-          <span className="text-muted">Conta de destino</span>
-          <select name="account" value={accountId} onChange={(e) => setAccountId(e.target.value)} className={field}>
-            <option value="">Nenhuma por enquanto</option>
-            {accounts.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="block text-sm">
-          <span className="text-muted">Seu @ no vídeo</span>
-          <input key={accountId} name="handle" maxLength={40} defaultValue={handle} placeholder="@seucanal" className={field} />
         </label>
       </fieldset>
 
@@ -179,6 +230,35 @@ export function ScaleForm({ clips, accounts, localFiles, initial }: Props) {
           Custa <span className="num font-semibold text-sun">{formatCoins(count * COINS_PER_VARIATION)}</span> CityCoins · as que falharem voltam para a carteira
         </span>
       </div>
+      </div>
+
+      {/* prévia ao vivo com o perfil escolhido (ou a conta de exemplo) */}
+      <aside className="order-first lg:order-none">
+        <div className="lg:sticky lg:top-6">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">Prévia</p>
+          <TemplateThumb
+            id={preview}
+            className="mx-auto w-[200px] lg:w-full"
+            profile={{ name, handle, verified, avatarUrl: account?.avatarUrl }}
+            headline={firstHeadline || "viu tudo do gta 6 ainda?"}
+            cta={cta}
+          />
+          {selected.length > 1 && (
+            <div className="mt-2 flex flex-wrap justify-center gap-1">
+              {selected.map((t, i) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setPreviewIndex(i)}
+                  className={`rounded-full px-2 py-0.5 text-[10px] ${t === preview ? "bg-pink/25 text-ink" : "text-muted hover:text-ink"}`}
+                >
+                  {TEMPLATES.find((x) => x.id === t)?.name}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </aside>
     </form>
   );
 }

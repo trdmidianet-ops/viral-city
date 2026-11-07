@@ -18,6 +18,10 @@ export type ScaleJob = {
   use_ai: boolean;
   count: number;
   handle: string;
+  profile_name: string;
+  avatar_url: string | null;
+  verified: boolean;
+  cta: string;
   status: ScaleStatus;
   progress: string | null;
   error: string | null;
@@ -46,6 +50,7 @@ export type Variation = {
 export type NewScaleJob = Pick<
   ScaleJob,
   "account_id" | "base_kind" | "clip_id" | "base_path" | "base_name" | "topic" | "templates" | "headlines" | "use_ai" | "count" | "handle"
+  | "profile_name" | "avatar_url" | "verified" | "cta"
 >;
 
 export async function createScaleJob(userId: string, input: NewScaleJob): Promise<ScaleJob> {

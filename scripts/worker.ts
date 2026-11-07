@@ -7,6 +7,8 @@
  * 3) Agenda: nos horários marcados, posta o próximo vídeo aprovado de cada conta no YouTube.
  * Deixe a janela aberta; ele verifica tudo a cada 20 segundos.
  */
+import { existsSync } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { getAccount, getAccountLogo } from "@/lib/accounts/store";
 import { acquireSource } from "@/lib/clips/acquire";
@@ -181,6 +183,24 @@ async function scaleBasePath(job: ScaleJob): Promise<string> {
   return clip.local_path;
 }
 
+/** Baixa a foto de perfil do job uma vez (fica na pasta do job). null = sem foto, desenha a inicial. */
+async function scaleAvatar(job: ScaleJob): Promise<string | null> {
+  if (!job.avatar_url || !/^https:\/\//i.test(job.avatar_url)) return null;
+  const file = path.join(SCALE_DIR, `job-${job.id}`, "avatar.img");
+  if (existsSync(file)) return file;
+  try {
+    const res = await fetch(job.avatar_url, { signal: AbortSignal.timeout(15_000) });
+    const type = res.headers.get("content-type") ?? "";
+    const body = Buffer.from(await res.arrayBuffer());
+    if (!res.ok || !type.startsWith("image/") || body.length > 3_000_000) return null;
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, body);
+    return file;
+  } catch {
+    return null;
+  }
+}
+
 async function processScaleJob(job: ScaleJob) {
   const label = (job.topic || job.base_name || "vídeo").slice(0, 80);
   log(`🧬 Scale: ${job.count} versões de "${label}"…`);
@@ -235,7 +255,18 @@ async function variationsQueue() {
     try {
       if (!job) throw new Error("Job não encontrado.");
       const { file, duration } = await renderVariation(
-        { id: v.id, basePath: await scaleBasePath(job), template: v.template, headline: v.headline, handle: job.handle, params: v.params },
+        {
+          id: v.id,
+          basePath: await scaleBasePath(job),
+          template: v.template,
+          headline: v.headline,
+          handle: job.handle,
+          params: v.params,
+          name: job.profile_name,
+          verified: job.verified,
+          cta: job.cta,
+          avatarPath: await scaleAvatar(job),
+        },
         SCALE_DIR,
       );
       await updateVariation(v.id, { status: "rendered", local_path: file, duration_seconds: duration });

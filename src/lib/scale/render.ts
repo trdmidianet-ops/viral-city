@@ -23,6 +23,12 @@ export type RenderVariationInput = {
   headline: string;
   handle: string;
   params: VariationParams;
+  /** Perfil mostrado no template (conta conectada ou a conta de exemplo). */
+  name: string;
+  verified: boolean;
+  cta: string;
+  /** Foto de perfil já baixada no PC, ou null para desenhar a inicial. */
+  avatarPath: string | null;
 };
 
 /** Renderiza uma versão: vídeo base no layout do template, manchete e pequenas diferenças de edição. */
@@ -39,7 +45,16 @@ export async function renderVariation(input: RenderVariationInput, baseDir: stri
   const font = await prepareFont(dir);
   await writeFile(
     path.join(dir, "text.ass"),
-    buildTemplateAss(input.template, { headline: input.headline, handle: input.handle, duration, font }),
+    buildTemplateAss(input.template, {
+      headline: input.headline,
+      cta: input.cta,
+      name: input.name,
+      handle: input.handle,
+      verified: input.verified,
+      hasAvatar: Boolean(input.avatarPath),
+      duration,
+      font,
+    }),
     "utf8",
   );
 
@@ -49,7 +64,7 @@ export async function renderVariation(input: RenderVariationInput, baseDir: stri
     () => false,
   );
   const audio = hasAudio ? audioSpeedFilter(input.params) : "";
-  const filters = [templateVideoFilter(input.template, input.params), "[base]ass=text.ass:fontsdir=.[out]"];
+  const filters = [templateVideoFilter(input.template, input.params, Boolean(input.avatarPath)), "[base]ass=text.ass:fontsdir=.[out]"];
   if (audio) filters.push(`[0:a]${audio}[aout]`);
 
   await ffmpeg(
@@ -58,12 +73,14 @@ export async function renderVariation(input: RenderVariationInput, baseDir: stri
       "-ss", offset.toFixed(2),
       "-t", inputSeconds.toFixed(2),
       "-i", path.resolve(input.basePath),
+      ...(input.avatarPath ? ["-loop", "1", "-i", path.resolve(input.avatarPath)] : []),
       "-filter_complex", filters.join(";"),
       "-map", "[out]",
       "-map", audio ? "[aout]" : "0:a:0?",
       "-c:v", "libx264", "-preset", "veryfast", "-crf", "21", "-pix_fmt", "yuv420p", "-r", "30",
       "-c:a", "aac", "-b:a", "160k",
       "-movflags", "+faststart",
+      "-shortest",
       "final.mp4",
     ],
     dir,

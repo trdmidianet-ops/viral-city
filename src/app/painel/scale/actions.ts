@@ -48,12 +48,26 @@ export async function createScaleAction(_: ScaleFormState, form: FormData): Prom
   if (useAi && !topic && !headlines.length) return { error: "Conte o assunto do vídeo para a IA escrever as manchetes." };
 
   const accountId = str(form, "account", 40);
-  if (accountId && (!UUID.test(accountId) || !(await getOwnedAccount(userId, accountId)))) return { error: "Conta inválida." };
+  const account = accountId && UUID.test(accountId) ? await getOwnedAccount(userId, accountId) : null;
+  if (accountId && !account) return { error: "Conta inválida." };
   const rawHandle = str(form, "handle", 40).replace(/^@+/, "").replace(/\s+/g, "");
   const handle = rawHandle ? `@${rawHandle}` : "";
 
   const kind = str(form, "base", 10);
-  const common = { account_id: accountId || null, topic, templates, headlines, use_ai: useAi, count, handle };
+  const common = {
+    account_id: accountId || null,
+    topic,
+    templates,
+    headlines,
+    use_ai: useAi,
+    count,
+    handle,
+    profile_name: str(form, "profile_name", 40),
+    // a foto vem só da conta conectada (nunca de um link digitado)
+    avatar_url: account?.avatarUrl && /^https:\/\//i.test(account.avatarUrl) ? account.avatarUrl : null,
+    verified: form.get("verified") === "on",
+    cta: str(form, "cta", 90),
+  };
   if (kind === "clip") {
     const clipId = str(form, "clip", 40);
     const owned = UUID.test(clipId) ? await getOwnedClip(userId, clipId) : null;

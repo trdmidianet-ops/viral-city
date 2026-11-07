@@ -5,7 +5,7 @@ import { TEMPLATES, buildTemplateAss, headlineSize, planVariations, templateVide
 
 describe("planejamento das versões", () => {
   it("reveza templates e manchetes, cobrindo combinações diferentes", () => {
-    const plan = planVariations(["manchete", "caixa"], ["A", "B", "C"], 6);
+    const plan = planVariations(["perfil", "tweet-escuro"], ["A", "B", "C"], 6);
     expect(plan.map((p) => p.position)).toEqual([1, 2, 3, 4, 5, 6]);
     expect(plan.map((p) => p.headline)).toEqual(["A", "B", "C", "A", "B", "C"]);
     const pairs = new Set(plan.map((p) => `${p.template}|${p.headline}`));
@@ -13,7 +13,7 @@ describe("planejamento das versões", () => {
   });
 
   it("sem manchetes ainda gera as versões (texto vazio)", () => {
-    expect(planVariations(["meme"], [], 2).map((p) => p.headline)).toEqual(["", ""]);
+    expect(planVariations(["manchete"], [], 2).map((p) => p.headline)).toEqual(["", ""]);
   });
 
   it("a mesma posição gera sempre a mesma edição, e a primeira é a original", () => {
@@ -30,13 +30,17 @@ describe("planejamento das versões", () => {
 });
 
 describe("templates", () => {
-  it("todo template gera um filtro que termina em [base] e um ASS com a manchete", () => {
+  const opts = { headline: "Olha isso {aqui}", cta: "segue a página", name: "Portal GTA 6", handle: "@portalgta6", verified: true, hasAvatar: false, duration: 12.5, font: "Impact" };
+
+  it("todo template gera um filtro que termina em [base] e um ASS com o texto", () => {
     for (const t of TEMPLATES) {
-      const filter = templateVideoFilter(t.id, { zoom: 1.06, speed: 1.05, offset: 0 });
-      expect(filter.endsWith("[base]")).toBe(true);
-      expect(filter).toContain("pad=1080:1920");
-      expect(filter).toContain("setpts=PTS/1.05");
-      const ass = buildTemplateAss(t.id, { headline: "Olha isso {aqui}", handle: "@canal", duration: 12.5, font: "Impact" });
+      for (const withAvatar of [false, true]) {
+        const filter = templateVideoFilter(t.id, { zoom: 1.06, speed: 1.05, offset: 0 }, withAvatar);
+        expect(filter.endsWith("[base]")).toBe(true);
+        expect(filter).toContain("pad=1080:1920");
+        expect(filter).toContain("setpts=PTS/1.05");
+      }
+      const ass = buildTemplateAss(t.id, opts);
       expect(ass).toContain("PlayResY: 1920");
       expect(ass).toMatch(/OLHA ISSO AQUI|Olha isso aqui/);
       expect(ass).not.toContain("{aqui}");
@@ -44,14 +48,27 @@ describe("templates", () => {
     }
   });
 
-  it("só os templates com rodapé mostram o @", () => {
-    const opts = { headline: "x", handle: "@canal", duration: 5, font: "Impact" };
-    expect(buildTemplateAss("urgente", opts)).toContain("@canal");
-    expect(buildTemplateAss("neon", opts)).toContain("@canal");
-    expect(buildTemplateAss("manchete", opts)).not.toContain("@canal");
+  it("os templates de página mostram o perfil com nome, @ e selo", () => {
+    const ass = buildTemplateAss("perfil", opts);
+    expect(ass).toContain("Portal GTA 6");
+    expect(ass).toContain("@portalgta6");
+    expect(ass).toContain("&H00F09B1D"); // azul do selo
+    expect(buildTemplateAss("perfil", { ...opts, verified: false })).not.toContain("&H00F09B1D");
+    expect(buildTemplateAss("manchete", opts)).not.toContain("@portalgta6");
   });
 
-  it("manchetes longas ficam menores", () => {
+  it("sem foto desenha a inicial; com foto, a foto entra no filtro em círculo", () => {
+    expect(buildTemplateAss("tweet-claro", opts)).toMatch(/}P$/m);
+    expect(buildTemplateAss("tweet-claro", { ...opts, hasAvatar: true })).not.toMatch(/}P$/m);
+    expect(templateVideoFilter("perfil", { zoom: 1, speed: 1, offset: 0 }, true)).toContain("hypot(");
+  });
+
+  it("só o template com chamada mostra o texto de baixo", () => {
+    expect(buildTemplateAss("perfil-cta", opts)).toContain("segue a página");
+    expect(buildTemplateAss("perfil", opts)).not.toContain("segue a página");
+  });
+
+  it("textos longos ficam menores", () => {
     expect(headlineSize("curta", 96)).toBe(96);
     expect(headlineSize("x".repeat(80), 96)).toBeLessThan(70);
   });
