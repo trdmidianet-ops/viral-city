@@ -46,6 +46,7 @@ import {
   type ScaleJob,
 } from "@/lib/scale/repo";
 import { planVariations } from "@/lib/scale/templates";
+import { isAdminUser } from "@/lib/admin";
 import { isDbConfigured } from "@/lib/db";
 import { isSlotDue } from "@/lib/schedule/due";
 import { listSlots, markSlotRun } from "@/lib/schedule/repo";
@@ -81,7 +82,9 @@ async function processSource(source: Source) {
   await updateSource(source.id, { local_path: file, duration_seconds: duration });
 
   const cost = costForDuration(duration);
-  const charge = await chargeSource(source.id, cost, `Cortes de "${(source.title || source.upload_name || "vídeo").slice(0, 80)}" (${Math.ceil(duration / 60)} min)`);
+  const admin = await isAdminUser(source.user_id);
+  if (admin) log("👑 Conta de administrador: sem cobrança de CityCoins.");
+  const charge = admin ? ({ ok: true, balance: null } as const) : await chargeSource(source.id, cost, `Cortes de "${(source.title || source.upload_name || "vídeo").slice(0, 80)}" (${Math.ceil(duration / 60)} min)`);
   if (!charge.ok) {
     throw new Error(`Saldo insuficiente: este vídeo custa ${formatCoins(cost)} CityCoins. Recarregue na Carteira e tente de novo.`);
   }
@@ -207,7 +210,9 @@ async function processScaleJob(job: ScaleJob) {
   await scaleBasePath(job); // confere antes de cobrar
 
   const cost = costForVariations(job.count);
-  const charge = await chargeScaleJob(job.id, cost, `Scale: ${job.count} versões de "${label}"`);
+  const admin = await isAdminUser(job.user_id);
+  if (admin) log("👑 Conta de administrador: sem cobrança de CityCoins.");
+  const charge = admin ? ({ ok: true, balance: null } as const) : await chargeScaleJob(job.id, cost, `Scale: ${job.count} versões de "${label}"`);
   if (!charge.ok) throw new Error(`Saldo insuficiente: ${job.count} versões custam ${formatCoins(cost)} CityCoins. Recarregue na Carteira.`);
   if (charge.balance !== null) log(`🪙 ${formatCoins(cost)} CityCoins cobrados (saldo: ${formatCoins(charge.balance)}).`);
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarClock, LayoutDashboard, LayoutTemplate, Layers, Scissors, Settings, TrendingUp, Users, Wallet } from "lucide-react";
+import { CalendarClock, Crown, LayoutDashboard, LayoutTemplate, Layers, Scissors, Settings, TrendingUp, Users, Wallet } from "lucide-react";
 
 export const navItems = [
   { href: "/painel", label: "Visão geral", icon: LayoutDashboard },
@@ -16,11 +16,13 @@ export const navItems = [
   { href: "/painel/configuracoes", label: "Configurações", icon: Settings },
 ];
 
-export function PainelNav() {
+const adminItem = { href: "/painel/admin", label: "Admin", icon: Crown };
+
+export function PainelNav({ admin = false }: { admin?: boolean }) {
   const pathname = usePathname();
   return (
     <nav className="flex gap-1 overflow-x-auto md:flex-col">
-      {navItems.map(({ href, label, icon: Icon }) => {
+      {(admin ? [...navItems, adminItem] : navItems).map(({ href, label, icon: Icon }) => {
         const active = href === "/painel" ? pathname === href : pathname.startsWith(href);
         return (
           <Link

@@ -2,6 +2,7 @@ import { readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { beforeAll, describe, expect, it } from "vitest";
+import { ADMIN_CHECK_SQL, adminFromRow, type AdminCheckRow } from "@/lib/admin-rules";
 
 /**
  * Testa as migrações e as funções de dinheiro (CityCoins) num Postgres de verdade,
@@ -98,5 +99,32 @@ describe("CityCoins do Scale no banco", () => {
     await expect(db.query("select vc_charge_scale($1, 9999, 'scale')", [job])).rejects.toThrow(/saldo_insuficiente/);
     expect((await one<{ charged_coins: number | null }>("select charged_coins from vc_scale_jobs where id = $1", [job])).charged_coins).toBeNull();
     expect(await balance()).toBe(500);
+  });
+});
+
+describe("administrador", () => {
+  async function user(id: string, email: string, providers: string[]) {
+    await db.query(`insert into "user" ("id", "name", "email", "updatedAt") values ($1, 'x', $2, now())`, [id, email]);
+    for (const p of providers) {
+      await db.query(
+        `insert into "account" ("id", "accountId", "providerId", "userId", "createdAt", "updatedAt") values ($1, $1, $2, $3, now(), now())`,
+        [`${id}-${p}`, p, id],
+      );
+    }
+  }
+  const check = async (id: string) => adminFromRow(await one<AdminCheckRow>(ADMIN_CHECK_SQL, [id]));
+
+  it("só vira admin com o e-mail da lista entrando pelo Google, sem senha", async () => {
+    await user("adm", "Rafhael.MouraSaraiva@gmail.com", ["google"]);
+    await user("fake", "rafhael.mourasaraiva@gmail.com.br", ["google"]);
+    expect(await check("adm")).toBe(true);
+    expect(await check("fake")).toBe(false);
+    expect(await check(USER)).toBe(false);
+  });
+
+  it("uma conta com senha usando o e-mail do admin não vira admin", async () => {
+    await db.query(`delete from "user" where "id" = 'adm'`);
+    await user("impostor", "rafhael.mourasaraiva@gmail.com", ["credential", "google"]);
+    expect(await check("impostor")).toBe(false);
   });
 });

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getOwnedAccount } from "@/lib/accounts/store";
+import { isAdminUser } from "@/lib/admin";
 import { requireUserId } from "@/lib/auth";
 import { MAX_VARIATIONS, costForVariations, formatCoins } from "@/lib/coins/pricing";
 import { getBalance } from "@/lib/coins/wallet";
@@ -34,7 +35,7 @@ export async function createScaleAction(_: ScaleFormState, form: FormData): Prom
   const count = Math.trunc(Number(str(form, "count", 3)));
   if (!Number.isFinite(count) || count < 1 || count > MAX_VARIATIONS) return { error: `Escolha de 1 a ${MAX_VARIATIONS} versões.` };
   const cost = costForVariations(count);
-  if ((await getBalance(userId)) < cost) {
+  if (!(await isAdminUser(userId)) && (await getBalance(userId)) < cost) {
     return { error: `Saldo insuficiente: ${count} versões custam ${formatCoins(cost)} CityCoins. Recarregue na Carteira.` };
   }
 

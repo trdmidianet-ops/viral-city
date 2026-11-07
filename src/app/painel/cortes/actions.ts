@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getOwnedAccount, listAccounts } from "@/lib/accounts/store";
+import { isAdminUser } from "@/lib/admin";
 import { requireUserId } from "@/lib/auth";
 import { MIN_SOURCE_COINS, formatCoins } from "@/lib/coins/pricing";
 import { getBalance } from "@/lib/coins/wallet";
@@ -25,7 +26,7 @@ export async function createSourceAction(_: FormState, form: FormData): Promise<
   if (!isDbConfigured()) return { error: "Banco de dados não configurado." };
   const userId = await requireUserId();
   // O valor exato sai pela duração, no worker; aqui só barra quem não tem nem o mínimo
-  if ((await getBalance(userId)) < MIN_SOURCE_COINS) {
+  if (!(await isAdminUser(userId)) && (await getBalance(userId)) < MIN_SOURCE_COINS) {
     return { error: `Saldo insuficiente: gerar cortes custa a partir de ${formatCoins(MIN_SOURCE_COINS)} CityCoins. Recarregue na Carteira.` };
   }
 

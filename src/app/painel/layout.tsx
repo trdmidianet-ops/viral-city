@@ -6,6 +6,7 @@ import { getBalance } from "@/lib/coins/wallet";
 import { isDbConfigured } from "@/lib/db";
 import { signOut } from "@/app/login/actions";
 import { currentUser } from "@/lib/auth";
+import { isAdminUser } from "@/lib/admin";
 import { isAuthConfigured } from "@/lib/auth-config";
 import { gatePassword } from "@/lib/gate";
 import { PainelNav } from "./nav";
@@ -15,6 +16,7 @@ export default async function PainelLayout({ children }: { children: React.React
   const authOn = isAuthConfigured();
   const gated = !authOn && Boolean(gatePassword());
   const balance = authOn && user && isDbConfigured() ? await getBalance(user.id).catch(() => null) : null;
+  const admin = authOn && isDbConfigured() ? await isAdminUser(user?.id) : false;
 
   return (
     <div className="min-h-screen md:flex">
@@ -32,7 +34,7 @@ export default async function PainelLayout({ children }: { children: React.React
             </Link>
           )}
         </div>
-        <PainelNav />
+        <PainelNav admin={admin} />
         <div className="mt-auto hidden border-t border-line pt-4 text-sm md:block">
           <p className="truncate px-1 text-muted">{user?.email ?? (gated ? "Acesso por senha" : "Modo demo")}</p>
           {authOn && (
