@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { FileVideo, Link2, Scissors, Tv } from "lucide-react";
 import { createSourceAction, type FormState } from "./actions";
+import { useUpload } from "../use-upload";
 
 type Account = { id: string; name: string };
 type ChannelVideo = { id: string; title: string; thumbnail: string };
@@ -33,30 +34,7 @@ export function SourceForm({ accounts, uploads, niches, defaults, localFiles }: 
   const [state, action, pending] = useActionState<FormState, FormData>(createSourceAction, {});
   const [kind, setKind] = useState<(typeof kinds)[number]["id"]>(accounts.length ? "channel" : localFiles ? "file" : "link");
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
-  const [upload, setUpload] = useState<{ id: string; name: string } | null>(null);
-  const [progress, setProgress] = useState<number | null>(null);
-  const [uploadError, setUploadError] = useState("");
-
-  function sendFile(file: File) {
-    setUpload(null);
-    setUploadError("");
-    setProgress(0);
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/uploads");
-    xhr.setRequestHeader("x-filename", encodeURIComponent(file.name));
-    xhr.upload.onprogress = (e) => e.lengthComputable && setProgress(Math.round((e.loaded / e.total) * 100));
-    xhr.onload = () => {
-      setProgress(null);
-      const body = JSON.parse(xhr.responseText || "{}");
-      if (xhr.status === 200) setUpload({ id: body.uploadId, name: body.name });
-      else setUploadError(body.error ?? "Falha no envio.");
-    };
-    xhr.onerror = () => {
-      setProgress(null);
-      setUploadError("Falha no envio.");
-    };
-    xhr.send(file);
-  }
+  const { upload, progress, error: uploadError, send: sendFile } = useUpload();
 
   const videos = uploads[accountId] ?? [];
 

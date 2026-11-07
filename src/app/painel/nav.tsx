@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarClock, LayoutDashboard, Scissors, Settings, TrendingUp, Users, Wallet } from "lucide-react";
+import { CalendarClock, LayoutDashboard, LayoutTemplate, Layers, Scissors, Settings, TrendingUp, Users, Wallet } from "lucide-react";
 
 export const navItems = [
   { href: "/painel", label: "Visão geral", icon: LayoutDashboard },
   { href: "/painel/tendencias", label: "Tendências", icon: TrendingUp },
   { href: "/painel/contas", label: "Contas", icon: Users },
   { href: "/painel/cortes", label: "Cortes", icon: Scissors },
+  { href: "/painel/scale", label: "Scale", icon: Layers },
+  { href: "/painel/templates", label: "Templates", icon: LayoutTemplate },
   { href: "/painel/agenda", label: "Agenda", icon: CalendarClock },
   { href: "/painel/carteira", label: "Carteira", icon: Wallet },
   { href: "/painel/configuracoes", label: "Configurações", icon: Settings },

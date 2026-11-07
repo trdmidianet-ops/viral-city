@@ -71,3 +71,32 @@ describe("CityCoins no banco", () => {
     ]);
   });
 });
+
+describe("CityCoins do Scale no banco", () => {
+  async function newJob(count: number): Promise<string> {
+    return (
+      await one<{ id: string }>(
+        "insert into vc_scale_jobs (user_id, base_kind, templates, count) values ($1, 'file', '{manchete}', $2) returning id",
+        [USER, count],
+      )
+    ).id;
+  }
+
+  it("cobra um lote uma única vez e devolve só as versões que falharam", async () => {
+    const job = await newJob(10);
+    expect(Number((await one<{ v: string }>("select vc_charge_scale($1, 20, 'scale') as v", [job])).v)).toBe(480);
+    expect((await one<{ v: string | null }>("select vc_charge_scale($1, 20, 'scale') as v", [job])).v).toBeNull();
+    // 3 versões falharam: volta 6
+    expect(Number((await one<{ v: string }>("select vc_refund_scale($1, 6, 'estorno parcial') as v", [job])).v)).toBe(486);
+    // pedir mais do que sobrou cobrado devolve só o resto (14)
+    expect(Number((await one<{ v: string }>("select vc_refund_scale($1, 999, 'estorno') as v", [job])).v)).toBe(500);
+    expect((await one<{ v: string | null }>("select vc_refund_scale($1, null, 'estorno') as v", [job])).v).toBeNull();
+  });
+
+  it("sem saldo, o lote não é cobrado", async () => {
+    const job = await newJob(30);
+    await expect(db.query("select vc_charge_scale($1, 9999, 'scale')", [job])).rejects.toThrow(/saldo_insuficiente/);
+    expect((await one<{ charged_coins: number | null }>("select charged_coins from vc_scale_jobs where id = $1", [job])).charged_coins).toBeNull();
+    expect(await balance()).toBe(500);
+  });
+});

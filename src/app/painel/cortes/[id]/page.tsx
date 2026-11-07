@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Check, RotateCcw, Sparkles, Star, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, Layers, RotateCcw, Sparkles, Star, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/painel-ui";
 import { getAccount } from "@/lib/accounts/store";
 import { canUseLocalFiles } from "@/lib/clips/local-files";
@@ -172,6 +172,15 @@ function ClipCard({ clip, local }: { clip: Clip; local: boolean }) {
           </form>
         ) : (
           <p className="text-sm font-medium">{clip.hook}</p>
+        )}
+
+        {(clip.status === "rendered" || clip.status === "approved") && (
+          <Link
+            href={`/painel/scale?corte=${clip.id}`}
+            className={`flex items-center justify-center gap-2 rounded-full border border-pink/40 py-2 text-xs hover:bg-pink/10 ${clip.status === "approved" ? "mt-auto" : ""}`}
+          >
+            <Layers size={14} /> Multiplicar em várias versões
+          </Link>
         )}
 
         {clip.status === "rendered" && (

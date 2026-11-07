@@ -4,7 +4,7 @@ import { isAuthConfigured } from "@/lib/auth-config";
 import { GATE_COOKIE, gatePassword, gateToken } from "@/lib/gate";
 
 // /api/uploads fica fora do middleware (ele limitaria o corpo a 10 MB); a rota confere o acesso sozinha.
-const PROTECTED = ["/painel", "/api/oauth", "/api/clips"];
+const PROTECTED = ["/painel", "/api/oauth", "/api/clips", "/api/scale"];
 const isProtected = (pathname: string) => PROTECTED.some((p) => pathname.startsWith(p));
 
 export async function middleware(request: NextRequest) {
@@ -32,5 +32,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/painel/:path*", "/api/oauth/:path*", "/api/clips/:path*"],
+  matcher: ["/painel/:path*", "/api/oauth/:path*", "/api/clips/:path*", "/api/scale/:path*"],
 };

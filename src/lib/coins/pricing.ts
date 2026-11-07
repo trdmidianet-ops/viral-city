@@ -13,7 +13,12 @@ export function costForDuration(seconds: number): number {
   return Math.max(MIN_SOURCE_COINS, minutes * COINS_PER_MINUTE);
 }
 
-export const formatCoins = (n: number) => Math.trunc(n).toLocaleString("pt-BR");
+/** Scale e Templates: cada versão renderizada custa 2 CityCoins (as que falham são devolvidas). */
+export const COINS_PER_VARIATION = 2;
+export const MAX_VARIATIONS = 30;
+export const costForVariations = (count: number) => Math.max(1, Math.trunc(count)) * COINS_PER_VARIATION;
+
+export const formatCoins =(n: number) => Math.trunc(n).toLocaleString("pt-BR");
 
 // ---------- moedas aceitas e conversão ----------
 

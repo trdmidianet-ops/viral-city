@@ -116,6 +116,17 @@ export async function listClips(sourceId: string): Promise<Clip[]> {
   return query<Clip>("select * from vc_clips where source_id = $1 order by score desc", [sourceId]);
 }
 
+/** Cortes já renderizados do usuário (base para o Scale), do mais novo ao mais antigo. */
+export async function listRenderedClips(userId: string, limit = 60): Promise<(Clip & { source_title: string })[]> {
+  return query<Clip & { source_title: string }>(
+    `select c.*, coalesce(nullif(s.title, ''), s.upload_name, 'Vídeo') as source_title
+     from vc_clips c join vc_sources s on s.id = c.source_id
+     where s.user_id = $1 and c.status in ('rendered', 'approved') and c.local_path is not null
+     order by c.updated_at desc limit $2`,
+    [userId, limit],
+  );
+}
+
 export async function getClip(id: string): Promise<Clip | null> {
   return queryOne<Clip>("select * from vc_clips where id = $1", [id]);
 }

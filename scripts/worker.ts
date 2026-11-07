@@ -2,7 +2,9 @@
  * Worker da Viral City — roda no seu PC: `npm run worker`.
  * 1) Cortes: baixa o vídeo longo, cobra os CityCoins, transcreve (Whisper), a IA escolhe 5 cortes
  *    e o FFmpeg renderiza. Se der erro depois da cobrança, os CityCoins voltam para a carteira.
- * 2) Agenda: nos horários marcados, posta o próximo vídeo aprovado de cada conta no YouTube.
+ * 2) Scale: um vídeo base vira várias versões (templates + manchetes); cobra por versão e
+ *    devolve as que falharem.
+ * 3) Agenda: nos horários marcados, posta o próximo vídeo aprovado de cada conta no YouTube.
  * Deixe a janela aberta; ele verifica tudo a cada 20 segundos.
  */
 import path from "node:path";
@@ -11,12 +13,13 @@ import { acquireSource } from "@/lib/clips/acquire";
 import { askClaude } from "@/lib/clips/ai";
 import { mediaDuration } from "@/lib/clips/ffmpeg";
 import { buildPrompt, fallbackClips, parseClips, toSegments } from "@/lib/clips/pick";
-import { costForDuration, formatCoins } from "@/lib/coins/pricing";
+import { COINS_PER_VARIATION, costForDuration, costForVariations, formatCoins } from "@/lib/coins/pricing";
 import { chargeSource, refundSource } from "@/lib/coins/wallet";
 import { renderClip } from "@/lib/clips/render";
 import {
   claimNextClip,
   claimNextSource,
+  getClip,
   getSource,
   recoverStuckClips,
   replaceClips,
@@ -25,6 +28,22 @@ import {
   type Source,
 } from "@/lib/clips/repo";
 import { transcribe } from "@/lib/clips/transcribe";
+import { buildHeadlinePrompt, fallbackHeadlines, parseHeadlines } from "@/lib/scale/headlines";
+import { renderVariation } from "@/lib/scale/render";
+import {
+  chargeScaleJob,
+  claimNextScaleJob,
+  claimNextVariation,
+  finishScaleJobIfDone,
+  getScaleJob,
+  insertVariations,
+  recoverStuckScale,
+  refundScaleJob,
+  updateScaleJob,
+  updateVariation,
+  type ScaleJob,
+} from "@/lib/scale/repo";
+import { planVariations } from "@/lib/scale/templates";
 import { isDbConfigured } from "@/lib/db";
 import { isSlotDue } from "@/lib/schedule/due";
 import { listSlots, markSlotRun } from "@/lib/schedule/repo";
@@ -37,6 +56,7 @@ const TICK_MS = 20_000;
 const DATA = path.join(process.cwd(), ".data");
 const SOURCES_DIR = path.join(DATA, "sources");
 const CLIPS_DIR = path.join(DATA, "clips");
+const SCALE_DIR = path.join(DATA, "scale");
 
 const log = (...args: unknown[]) => console.log(new Date().toLocaleTimeString("pt-BR"), "·", ...args);
 const message = (err: unknown) => (err instanceof Error ? err.message : String(err));
@@ -138,6 +158,91 @@ async function clipsQueue() {
   }
 }
 
+// ---------- Scale ----------
+
+/** Arquivo do vídeo base: o corte renderizado ou o clipe enviado. */
+async function scaleBasePath(job: ScaleJob): Promise<string> {
+  if (job.base_kind === "file") {
+    if (!job.base_path) throw new Error("O clipe enviado não está mais no PC.");
+    return job.base_path;
+  }
+  const clip = job.clip_id ? await getClip(job.clip_id) : null;
+  if (!clip?.local_path) throw new Error("O corte base não está mais no PC (renderize ele de novo em Cortes).");
+  return clip.local_path;
+}
+
+async function processScaleJob(job: ScaleJob) {
+  const label = (job.topic || job.base_name || "vídeo").slice(0, 80);
+  log(`🧬 Scale: ${job.count} versões de "${label}"…`);
+  await scaleBasePath(job); // confere antes de cobrar
+
+  const cost = costForVariations(job.count);
+  const charge = await chargeScaleJob(job.id, cost, `Scale: ${job.count} versões de "${label}"`);
+  if (!charge.ok) throw new Error(`Saldo insuficiente: ${job.count} versões custam ${formatCoins(cost)} CityCoins. Recarregue na Carteira.`);
+  if (charge.balance !== null) log(`🪙 ${formatCoins(cost)} CityCoins cobrados (saldo: ${formatCoins(charge.balance)}).`);
+
+  let headlines = job.headlines;
+  let aiUsed: boolean | null = null;
+  if (job.use_ai && headlines.length < job.count) {
+    await updateScaleJob(job.id, { progress: "A IA está escrevendo as manchetes…" });
+    try {
+      const prompt = buildHeadlinePrompt({ topic: job.topic, count: job.count - headlines.length, examples: headlines });
+      const fromAi = parseHeadlines(await askClaude(prompt, process.cwd()));
+      if (!fromAi.length) throw new Error("resposta sem manchetes");
+      headlines = [...headlines, ...fromAi];
+      aiUsed = true;
+    } catch (err) {
+      log(`🤖 IA indisponível (${message(err)}). Usando fórmulas de gancho.`);
+      headlines = [...headlines, ...fallbackHeadlines(job.topic, job.count)];
+      aiUsed = false;
+    }
+  }
+
+  await insertVariations(job.id, planVariations(job.templates, headlines, job.count));
+  await updateScaleJob(job.id, { status: "rendering", progress: `Renderizando ${job.count} versões…`, ai_used: aiUsed, headlines });
+}
+
+async function scaleJobsQueue() {
+  for (;;) {
+    const job = await claimNextScaleJob();
+    if (!job) return;
+    try {
+      await processScaleJob(job);
+    } catch (err) {
+      await updateScaleJob(job.id, { status: "failed", error: message(err).slice(0, 1000), progress: null });
+      log(`❌ Scale falhou: ${message(err)}`);
+      const refunded = await refundScaleJob(job.id, null, "Estorno: o Scale falhou").catch(() => null);
+      if (refunded !== null) log(`↩️  CityCoins devolvidos (saldo: ${formatCoins(refunded)}).`);
+    }
+  }
+}
+
+async function variationsQueue() {
+  for (;;) {
+    const v = await claimNextVariation();
+    if (!v) return;
+    const job = await getScaleJob(v.job_id);
+    try {
+      if (!job) throw new Error("Job não encontrado.");
+      const { file, duration } = await renderVariation(
+        { id: v.id, basePath: await scaleBasePath(job), template: v.template, headline: v.headline, handle: job.handle, params: v.params },
+        SCALE_DIR,
+      );
+      await updateVariation(v.id, { status: "rendered", local_path: file, duration_seconds: duration });
+      log(`🎞️  Versão ${v.position} pronta (${v.template}).`);
+    } catch (err) {
+      await updateVariation(v.id, { status: "failed", error: message(err).slice(0, 1000) });
+      log(`❌ Versão falhou: ${message(err)}`);
+    }
+    if (!job) continue;
+    const finished = await finishScaleJobIfDone(job.id);
+    if (finished?.failed) {
+      const back = await refundScaleJob(job.id, finished.failed * COINS_PER_VARIATION, `Estorno: ${finished.failed} versões do Scale falharam`).catch(() => null);
+      if (back !== null) log(`↩️  ${finished.failed * COINS_PER_VARIATION} CityCoins devolvidos (saldo: ${formatCoins(back)}).`);
+    }
+  }
+}
+
 async function publishDue() {
   const now = new Date();
   for (const slot of await listSlots()) {
@@ -176,6 +281,8 @@ async function tick() {
     await publishDue(); // primeiro a agenda, para não atrasar posts por causa de renderização
     await sourcesQueue();
     await clipsQueue();
+    await scaleJobsQueue();
+    await variationsQueue();
   } catch (err) {
     log(`⚠️  ${message(err)}`);
   } finally {
@@ -191,6 +298,7 @@ async function main() {
   log("🌴 Worker da Viral City ligado. Ctrl+C para parar.");
   await recoverStuck();
   await recoverStuckClips();
+  await recoverStuckScale();
   await tick();
   setInterval(tick, TICK_MS);
 }
