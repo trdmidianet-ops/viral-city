@@ -17,9 +17,10 @@ export const setupGuides: Record<Platform, { steps: string[]; note?: string }> =
       "Crie uma conta em developers.tiktok.com e um app (Manage apps › Connect an app).",
       "Adicione os produtos Login Kit e Content Posting API (ative Direct Post).",
       "Em Login Kit, cole o endereço de retorno mostrado abaixo (precisa ser HTTPS).",
-      "Copie Client key e Client secret para o .env.local e reinicie o servidor.",
+      "Em Scopes, confira user.info.basic, video.upload e video.publish.",
+      "Copie Client key e Client secret para TIKTOK_CLIENT_KEY e TIKTOK_CLIENT_SECRET na Vercel (All Environments) e publique de novo.",
     ],
-    note: "Até o TikTok aprovar o app (auditoria), os vídeos postados pela API ficam privados.",
+    note: "Até o TikTok aprovar o app (auditoria), os vídeos postados pela API ficam privados (“só eu”).",
   },
   instagram: {
     steps: [
@@ -27,7 +28,8 @@ export const setupGuides: Record<Platform, { steps: string[]; note?: string }> =
       "Em developers.facebook.com, crie um app do tipo Empresa e adicione o produto Instagram › “API com login do Instagram”.",
       "Em “Configurar login comercial do Instagram”, cole o endereço de retorno mostrado abaixo (precisa ser HTTPS).",
       "Em Funções do app, adicione sua conta do Instagram como testadora e aceite o convite no Instagram.",
-      "Copie o ID e a chave secreta do app do Instagram para o .env.local e reinicie o servidor.",
+      "Copie o ID e a chave secreta do app do Instagram para INSTAGRAM_APP_ID e INSTAGRAM_APP_SECRET na Vercel (All Environments) e publique de novo.",
     ],
+    note: "Em modo de desenvolvimento o app já posta nas suas contas. Para outras pessoas usarem, peça a análise da permissão instagram_business_content_publish.",
   },
 };

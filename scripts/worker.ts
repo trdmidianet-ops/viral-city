@@ -52,7 +52,7 @@ import { listSlots, markSlotRun } from "@/lib/schedule/repo";
 import { niches } from "@/lib/youtube/niches";
 import { fetchTrending } from "@/lib/youtube/trending";
 import { claimForPublishing, markFailed, markPublished, nextReadyFor, recoverStuck } from "@/lib/videos/repo";
-import { uploadShort } from "@/lib/youtube/upload";
+import { publishVideo } from "@/lib/publish";
 
 const TICK_MS = 20_000;
 const DATA = path.join(process.cwd(), ".data");
@@ -292,7 +292,7 @@ async function publishDue() {
     await markSlotRun(slot, now);
 
     const account = await getAccount(slot.account_id);
-    if (!account || account.platform !== "youtube") continue;
+    if (!account) continue;
     if (!account.userId) continue;
     const next = await nextReadyFor(account.id, account.userId);
     if (!next?.local_path) {
@@ -302,11 +302,11 @@ async function publishDue() {
     const video = await claimForPublishing(next.id, account.id);
     if (!video) continue;
 
-    log(`📤 Postando "${video.title}" em ${account.name}…`);
+    log(`📤 Postando "${video.title}" em ${account.name} (${account.platform})…`);
     try {
-      const id = await uploadShort({ accountId: account.id, filePath: video.local_path!, title: video.title, description: video.description });
-      await markPublished(video.id, id);
-      log(`🚀 Publicado: https://youtube.com/shorts/${id}`);
+      const done = await publishVideo(account, { filePath: video.local_path!, title: video.title, description: video.description });
+      await markPublished(video.id, done.externalId);
+      log(`🚀 Publicado${done.url ? `: ${done.url}` : ""}${done.note ? ` (${done.note})` : ""}`);
     } catch (err) {
       await markFailed(video.id, message(err));
       log(`❌ Postagem falhou: ${message(err)}`);

@@ -1,17 +1,5 @@
 import { readFile, stat } from "node:fs/promises";
-import { getTokens, saveTokens } from "@/lib/accounts/store";
-import { providers } from "@/lib/oauth/providers";
-
-/** Access token válido para a conta: renova pelo refresh token quando faltar menos de 2 minutos. */
-export async function freshAccessToken(accountId: string): Promise<string> {
-  const tokens = await getTokens(accountId);
-  if (!tokens) throw new Error("Conta sem tokens: reconecte o canal.");
-  const expires = tokens.expiresAt ? Date.parse(tokens.expiresAt) : 0;
-  if (expires - Date.now() > 120_000) return tokens.accessToken;
-  const renewed = await providers.youtube.refresh(tokens);
-  await saveTokens(accountId, renewed);
-  return renewed.accessToken;
-}
+import { freshAccessToken } from "@/lib/publish/tokens";
 
 export function shortsMetadata(title: string, description: string) {
   const desc = description.includes("#shorts") ? description : `${description}\n\n#shorts`.trim();

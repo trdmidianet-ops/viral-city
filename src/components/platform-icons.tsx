@@ -50,6 +50,6 @@ export const platforms = [
   { id: "instagram", name: "Instagram", Icon: InstagramIcon, color: "text-pink" },
 ] as const;
 
-/** Redes visíveis no painel. TikTok e Instagram ficam escondidos até decidirmos ativá-los. */
-const ACTIVE = ["youtube"];
+/** Redes visíveis no painel (cada uma só conecta depois que as chaves do app estiverem configuradas). */
+const ACTIVE = ["youtube", "instagram", "tiktok"];
 export const activePlatforms = platforms.filter((p) => ACTIVE.includes(p.id));

@@ -37,7 +37,8 @@ export default async function AgendaPage() {
       <p className="mb-6 rounded-xl border border-line bg-night/40 px-4 py-3 text-xs text-muted">
         Horários de Brasília. O worker no seu PC (<code className="text-ink">npm run worker</code>) precisa estar
         ligado; se o PC ligar até 30 min depois do horário, ele ainda posta. Cada envio ao YouTube gasta 1.600 das
-        10.000 unidades diárias da API (≈ 6 posts por dia somando todos os canais).
+        10.000 unidades diárias da API (≈ 6 posts por dia somando todos os canais). O Instagram aceita até 50 posts
+        por dia por conta.
       </p>
 
       {accounts.length === 0 ? (
@@ -51,14 +52,13 @@ export default async function AgendaPage() {
           {accounts.map((account) => {
             const p = platforms.find((x) => x.id === account.platform)!;
             const mine = slots.filter((s) => s.account_id === account.id);
-            const canPost = account.platform === "youtube";
             return (
               <section key={account.id} className="glass rounded-2xl p-5 sm:p-6">
                 <header className="flex flex-wrap items-center gap-3">
                   <p.Icon className={p.color} />
                   <h2 className="font-semibold">{account.name}</h2>
-                  {!canPost && (
-                    <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-muted">postagem em breve</span>
+                  {account.platform === "tiktok" && (
+                    <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs text-muted">privado até o TikTok aprovar o app</span>
                   )}
                 </header>
 
