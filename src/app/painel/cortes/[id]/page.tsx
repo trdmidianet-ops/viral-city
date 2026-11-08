@@ -16,6 +16,64 @@ export const dynamic = "force-dynamic";
 const time = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 const field = "rounded-lg border border-line bg-night/60 px-3 py-2 text-sm outline-none focus:border-pink";
 
+
+const stagePercent: Record<string, number> = {
+  queued: 8,
+  downloading: 25,
+  transcribing: 52,
+  analyzing: 70,
+  rendering: 80,
+  ready: 100,
+};
+
+function ProcessingProgress({ status, clips, progress }: {
+  status: string;
+  clips: Clip[];
+  progress: string | null;
+}) {
+  if (status === "ready" || status === "failed") return null;
+  const totalClips = clips.length;
+  const doneClips = clips.filter((c) => c.status === "rendered" || c.status === "approved").length;
+  const basePercent = stagePercent[status] ?? 8;
+  const percent =
+    status === "rendering" && totalClips > 0
+      ? 80 + (doneClips / totalClips) * 18
+      : basePercent;
+
+  const stageLabel: Record<string, string> = {
+    queued: "Na fila…",
+    downloading: "Baixando vídeo…",
+    transcribing: "Transcrevendo áudio…",
+    analyzing: "Analisando com IA…",
+    rendering:
+      totalClips > 0
+        ? `Renderizando cortes — ${doneClips} de ${totalClips} pronto${doneClips !== 1 ? "s" : ""}`
+        : "Renderizando cortes…",
+  };
+
+  return (
+    <div className="glass mb-6 rounded-2xl p-4">
+      <div className="mb-2 flex items-center justify-between text-sm">
+        <span className="font-medium">{stageLabel[status] ?? "Processando…"}</span>
+        <span className="num font-semibold text-pink">{Math.round(percent)}%</span>
+      </div>
+      <div
+        className="h-2 overflow-hidden rounded-full bg-white/10"
+        role="progressbar"
+        aria-valuenow={Math.round(percent)}
+        aria-valuemin={0}
+        aria-valuemax={100}
+      >
+        <div
+          className="h-full bg-gradient-to-r from-pink to-orange"
+          style={{ width: `${percent}%` }}
+        />
+      </div>
+      {progress && <p className="mt-2 text-xs text-muted">{progress}</p>}
+    </div>
+  );
+}
+
 export default async function SourcePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isDbConfigured() || !/^[0-9a-f-]{36}$/i.test(id)) notFound();
@@ -31,6 +89,7 @@ export default async function SourcePage({ params }: { params: Promise<{ id: str
   return (
     <>
       <AutoRefresh active={working} />
+      <ProcessingProgress status={source.status} clips={clips} progress={source.progress ?? null} />
       <Link href="/painel/cortes" className="mb-4 inline-flex items-center gap-1 text-sm text-muted hover:text-ink">
         <ArrowLeft size={14} /> Voltar
       </Link>
