@@ -53,6 +53,22 @@ async function assertOwnVideo(videoId: string, channelId: string) {
   }
 }
 
+function ytDlpUrl(url: string, target: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const proc = spawn(
+      "yt-dlp",
+      ["-f", "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[ext=mp4]/b", "--merge-output-format", "mp4", "--no-playlist", "-o", target, url],
+      { windowsHide: true },
+    );
+    let err = "";
+    proc.stderr.on("data", (d) => (err += d));
+    proc.on("error", () =>
+      reject(new Error("yt-dlp não está instalado no servidor. Instale com: apt-get install yt-dlp")),
+    );
+    proc.on("close", (code) => (code === 0 ? resolve() : reject(new Error(`yt-dlp falhou: ${err.slice(-400)}`))));
+  });
+}
+
 function ytDlp(videoId: string, target: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const proc = spawn(
@@ -81,7 +97,10 @@ export async function acquireSource(source: Source, baseDir: string): Promise<st
   }
 
   const target = path.join(dir, "source.mp4");
-  if (source.kind === "link") {
+  if (source.kind === "import") {
+    if (!source.source_url) throw new Error("Fonte sem URL.");
+    await ytDlpUrl(source.source_url, target);
+  } else if (source.kind === "link") {
     if (!source.source_url) throw new Error("Fonte sem link.");
     await downloadLink(source.source_url, target);
   } else {

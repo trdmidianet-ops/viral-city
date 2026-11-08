@@ -22,11 +22,29 @@ const FRAMINGS: Framing[] = ["center", "blur", "split"];
 const LANGS: Language[] = ["portuguese", "english", "spanish"];
 const str = (f: FormData, k: string, max: number) => String(f.get(k) ?? "").trim().slice(0, max);
 
+/** Avisa o worker externo (Railway) para começar a processar a source. */
+async function notifyWorker(sourceId: string): Promise<void> {
+  const url = process.env.WORKER_URL;
+  const secret = process.env.WORKER_SECRET;
+  if (!url) return; // sem worker — rodando localmente
+  try {
+    await fetch(`${url}/process`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-worker-secret": secret ?? "" },
+      body: JSON.stringify({ sourceId }),
+      signal: AbortSignal.timeout(5_000),
+    });
+  } catch (e) {
+    console.warn("[worker] notify error:", e);
+  }
+}
+
 export async function createSourceAction(_: FormState, form: FormData): Promise<FormState> {
   if (!isDbConfigured()) return { error: "Banco de dados não configurado." };
   const userId = await requireUserId();
   // O valor exato sai pela duração, no worker; aqui só barra quem não tem nem o mínimo
-  if (!(await isAdminUser(userId)) && (await getBalance(userId)) < MIN_SOURCE_COINS) {
+  const isLocalhost = !process.env.VERCEL;
+  if (!isLocalhost && !(await isAdminUser(userId)) && (await getBalance(userId)) < MIN_SOURCE_COINS) {
     return { error: `Saldo insuficiente: gerar cortes custa a partir de ${formatCoins(MIN_SOURCE_COINS)} CityCoins. Recarregue na Carteira.` };
   }
 
@@ -38,6 +56,7 @@ export async function createSourceAction(_: FormState, form: FormData): Promise<
   if (!FRAMINGS.includes(framing) || !LANGS.includes(language)) return { error: "Opções inválidas." };
   if (accountId && (!UUID.test(accountId) || !(await getOwnedAccount(userId, accountId)))) return { error: "Conta inválida." };
 
+  let newSourceId = "";
   const base = {
     account_id: accountId || null,
     language,
@@ -59,7 +78,7 @@ export async function createSourceAction(_: FormState, form: FormData): Promise<
     const account = (await listAccounts(userId, "youtube")).find((a) => a.id === accountId);
     const video = account ? (await listChannelUploads(account.externalId)).find((v) => v.id === videoId) : null;
     if (!video) return { error: "Esse vídeo não está entre os uploads recentes do canal." };
-    await createSource(userId, { ...base, kind, youtube_video_id: videoId, title: video.title });
+    newSourceId = (await createSource(userId, { ...base, kind, youtube_video_id: videoId, title: video.title })).id;
   } else if (kind === "link") {
     const url = str(form, "url", 1000);
     try {
@@ -72,24 +91,25 @@ export async function createSourceAction(_: FormState, form: FormData): Promise<
       return { error: "Links do YouTube não são aceitos: use o link do arquivo (Drive, Dropbox ou MP4) enviado pela campanha." };
     }
     if (form.get("permission") !== "on") return { error: "Confirme que você tem permissão do criador para cortar esse vídeo." };
-    await createSource(userId, { ...base, kind, source_url: url, title: str(form, "title", 120) });
+    newSourceId = (await createSource(userId, { ...base, kind, source_url: url, title: str(form, "title", 120) })).id;
   } else if (kind === "file") {
     if (!canUseLocalFiles()) return { error: "Envio de arquivo só funciona no painel aberto no seu PC." };
     const file = uploadPath(str(form, "uploadId", 60));
     if (!file) return { error: "Envie o arquivo antes de criar os cortes." };
     const name = str(form, "uploadName", 200);
-    await createSource(userId, { ...base, kind, upload_name: name, title: name.replace(/\.[^.]+$/, ""), local_path: file });
+    newSourceId = (await createSource(userId, { ...base, kind, upload_name: name, title: name.replace(/\.[^.]+$/, ""), local_path: file })).id;
   } else if (kind === "import") {
     if (!canUseLocalFiles()) return { error: "Importar vídeos só funciona no painel aberto no seu PC." };
     const fileId = str(form, "importFileId", 40);
     const file = downloadPath(fileId);
     if (!file) return { error: "Importe o vídeo antes de gerar os cortes." };
     const importTitle = `Importado – ${new Date().toLocaleDateString("pt-PT")}`;
-    await createSource(userId, { ...base, kind: "file", upload_name: `${fileId}.mp4`, title: importTitle, local_path: file });
+    newSourceId = (await createSource(userId, { ...base, kind: "file", upload_name: `${fileId}.mp4`, title: importTitle, local_path: file })).id;
   } else {
     return { error: "Escolha a origem do vídeo." };
   }
 
+  if (newSourceId) await notifyWorker(newSourceId);
   revalidatePath("/painel/cortes");
   redirect("/painel/cortes?criado=1");
 }
