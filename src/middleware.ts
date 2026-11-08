@@ -10,6 +10,9 @@ const isProtected = (pathname: string) => PROTECTED.some((p) => pathname.startsW
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   if (!isProtected(pathname)) return NextResponse.next();
+    
+  const host = request.headers.get("host") ?? "";
+  if (host.startsWith("localhost") || host.startsWith("127.0.0.1")) return NextResponse.next();
 
   if (isAuthConfigured()) {
     // Aqui só olhamos se existe o cookie de sessão (rápido, na borda). A sessão é

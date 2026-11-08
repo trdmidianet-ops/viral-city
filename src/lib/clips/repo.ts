@@ -1,7 +1,7 @@
 import { insertRow, query, queryOne, updateRows } from "@/lib/db";
 import type { CaptionColor, HookPosition } from "@/lib/video/captions";
 
-export type SourceKind = "channel" | "file" | "link";
+export type SourceKind = "channel" | "file" | "link" | "import";
 export type Framing = "center" | "blur" | "split";
 export type Language = "portuguese" | "english" | "spanish";
 export type SourceStatus =

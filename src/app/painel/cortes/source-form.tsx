@@ -1,9 +1,10 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { FileVideo, Link2, Scissors, Tv } from "lucide-react";
+import { Download, FileVideo, Link2, Scissors, Tv } from "lucide-react";
 import { createSourceAction, type FormState } from "./actions";
 import { useUpload } from "../use-upload";
+import { ImportarVideo } from "@/components/ImportarVideo";
 
 type Account = { id: string; name: string };
 type ChannelVideo = { id: string; title: string; thumbnail: string };
@@ -18,11 +19,14 @@ type Props = {
 
 const field = "mt-1 w-full rounded-lg border border-line bg-night/60 px-3 py-2.5 text-sm outline-none focus:border-pink";
 
-const kinds = [
-  { id: "channel", label: "Meu canal", icon: Tv },
-  { id: "file", label: "Arquivo do PC", icon: FileVideo },
-  { id: "link", label: "Link autorizado", icon: Link2 },
+const allKinds = [
+  { id: "channel", label: "Meu canal", icon: Tv, local: false },
+  { id: "file", label: "Arquivo do PC", icon: FileVideo, local: true },
+  { id: "link", label: "Link autorizado", icon: Link2, local: false },
+  { id: "import", label: "YouTube/IG/TT", icon: Download, local: true },
 ] as const;
+
+type KindId = (typeof allKinds)[number]["id"];
 
 const framings = [
   { id: "blur", label: "Fundo desfocado", hint: "Vídeo inteiro no meio, nunca corta ninguém" },
@@ -32,17 +36,25 @@ const framings = [
 
 export function SourceForm({ accounts, uploads, niches, defaults, localFiles }: Props) {
   const [state, action, pending] = useActionState<FormState, FormData>(createSourceAction, {});
-  const [kind, setKind] = useState<(typeof kinds)[number]["id"]>(accounts.length ? "channel" : localFiles ? "file" : "link");
+  const [kind, setKind] = useState<KindId>(accounts.length ? "channel" : localFiles ? "file" : "link");
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const { upload, progress, error: uploadError, send: sendFile } = useUpload();
+  const [importedFileId, setImportedFileId] = useState<string | null>(null);
 
   const videos = uploads[accountId] ?? [];
+
+  // Filtra abas: local-only só aparecem se localFiles=true
+  const kinds = allKinds.filter((k) => !k.local || localFiles);
+
+  function handleImported(fileId: string) {
+    setImportedFileId(fileId);
+  }
 
   return (
     <form action={action} className="glass space-y-5 rounded-2xl p-5 sm:p-6">
       <input type="hidden" name="kind" value={kind} />
 
-      <div role="tablist" aria-label="Origem do vídeo" className="grid grid-cols-3 gap-2">
+      <div role="tablist" aria-label="Origem do vídeo" className={`grid gap-2 grid-cols-${kinds.length}`}>
         {kinds.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -94,27 +106,24 @@ export function SourceForm({ accounts, uploads, niches, defaults, localFiles }: 
           </>
         ))}
 
-      {kind === "file" &&
-        (localFiles ? (
-          <div className="text-sm">
-            <label className="block">
-              <span className="text-muted">Vídeo do seu PC (MP4, MOV, MKV ou WEBM)</span>
-              <input
-                type="file"
-                accept="video/mp4,video/quicktime,video/x-matroska,video/webm,.mkv,.m4v"
-                onChange={(e) => e.target.files?.[0] && sendFile(e.target.files[0])}
-                className={`${field} file:mr-3 file:rounded-md file:border-0 file:bg-pink/20 file:px-3 file:py-1 file:text-ink`}
-              />
-            </label>
-            {progress !== null && <p className="mt-2 text-xs text-sun">Enviando… {progress}%</p>}
-            {upload && <p className="mt-2 text-xs text-cyan">✓ {upload.name} enviado</p>}
-            {uploadError && <p className="mt-2 text-xs text-pink">{uploadError}</p>}
-            <input type="hidden" name="uploadId" value={upload?.id ?? ""} />
-            <input type="hidden" name="uploadName" value={upload?.name ?? ""} />
-          </div>
-        ) : (
-          <p className="text-sm text-muted">O envio de arquivo funciona só no painel aberto no seu PC (localhost:3000).</p>
-        ))}
+      {kind === "file" && (
+        <div className="text-sm">
+          <label className="block">
+            <span className="text-muted">Vídeo do seu PC (MP4, MOV, MKV ou WEBM)</span>
+            <input
+              type="file"
+              accept="video/mp4,video/quicktime,video/x-matroska,video/webm,.mkv,.m4v"
+              onChange={(e) => e.target.files?.[0] && sendFile(e.target.files[0])}
+              className={`${field} file:mr-3 file:rounded-md file:border-0 file:bg-pink/20 file:px-3 file:py-1 file:text-ink`}
+            />
+          </label>
+          {progress !== null && <p className="mt-2 text-xs text-sun">Enviando… {progress}%</p>}
+          {upload && <p className="mt-2 text-xs text-cyan">✓ {upload.name} enviado</p>}
+          {uploadError && <p className="mt-2 text-xs text-pink">{uploadError}</p>}
+          <input type="hidden" name="uploadId" value={upload?.id ?? ""} />
+          <input type="hidden" name="uploadName" value={upload?.name ?? ""} />
+        </div>
+      )}
 
       {kind === "link" && (
         <div className="space-y-3 text-sm">
@@ -130,6 +139,18 @@ export function SourceForm({ accounts, uploads, niches, defaults, localFiles }: 
             <input type="checkbox" name="permission" required className="mt-0.5 accent-pink" />
             Tenho permissão do criador para cortar e publicar esse vídeo (ex.: campanha de clipping).
           </label>
+        </div>
+      )}
+
+      {kind === "import" && (
+        <div className="space-y-3">
+          <ImportarVideo onImported={handleImported} />
+          {importedFileId && (
+            <p className="rounded-lg border border-line bg-night/40 p-3 text-xs text-muted">
+              Vídeo importado e pronto para corte. Clique em <span className="text-ink">Gerar 5 cortes</span> para continuar.
+            </p>
+          )}
+          <input type="hidden" name="importFileId" value={importedFileId ?? ""} />
         </div>
       )}
 
@@ -203,7 +224,7 @@ export function SourceForm({ accounts, uploads, niches, defaults, localFiles }: 
 
       <button
         type="submit"
-        disabled={pending || progress !== null || (kind === "file" && !upload)}
+        disabled={pending || progress !== null || (kind === "file" && !upload) || (kind === "import" && !importedFileId)}
         className="btn-sunset flex w-full items-center justify-center gap-2 rounded-full py-3 font-semibold text-white disabled:opacity-50 sm:w-auto sm:px-8"
       >
         <Scissors size={18} /> {pending ? "Enviando…" : "Gerar 5 cortes"}

@@ -17,3 +17,11 @@ export function isInsideData(file: string): boolean {
 }
 
 export const canUseLocalFiles = () => !process.env.VERCEL;
+
+export const DOWNLOADS_DIR = path.join(DATA_DIR, "downloads");
+
+const DOWNLOAD_ID = /^[0-9a-f-]{36}$/i;
+
+export function downloadPath(fileId: string): string | null {
+  return DOWNLOAD_ID.test(fileId) ? path.join(DOWNLOADS_DIR, `${fileId}.mp4`) : null;
+}

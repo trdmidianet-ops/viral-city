@@ -8,7 +8,7 @@ import { requireUserId } from "@/lib/auth";
 import { MIN_SOURCE_COINS, formatCoins } from "@/lib/coins/pricing";
 import { getBalance } from "@/lib/coins/wallet";
 import { createSource, deleteSource, getOwnedClip, getOwnedSource, listClips, updateClip, updateSource, type Framing, type Language, type SourceKind } from "@/lib/clips/repo";
-import { canUseLocalFiles, uploadPath } from "@/lib/clips/local-files";
+import { canUseLocalFiles, uploadPath, downloadPath } from "@/lib/clips/local-files";
 import { parseClipEdit } from "@/lib/clips/edit";
 import { isDbConfigured } from "@/lib/db";
 import { listChannelUploads } from "@/lib/youtube/channel";
@@ -79,6 +79,13 @@ export async function createSourceAction(_: FormState, form: FormData): Promise<
     if (!file) return { error: "Envie o arquivo antes de criar os cortes." };
     const name = str(form, "uploadName", 200);
     await createSource(userId, { ...base, kind, upload_name: name, title: name.replace(/\.[^.]+$/, ""), local_path: file });
+  } else if (kind === "import") {
+    if (!canUseLocalFiles()) return { error: "Importar vídeos só funciona no painel aberto no seu PC." };
+    const fileId = str(form, "importFileId", 40);
+    const file = downloadPath(fileId);
+    if (!file) return { error: "Importe o vídeo antes de gerar os cortes." };
+    const importTitle = `Importado – ${new Date().toLocaleDateString("pt-PT")}`;
+    await createSource(userId, { ...base, kind: "file", upload_name: `${fileId}.mp4`, title: importTitle, local_path: file });
   } else {
     return { error: "Escolha a origem do vídeo." };
   }
