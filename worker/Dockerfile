@@ -34,3 +34,4 @@ ENV WORKER_DATA_DIR=/data
 EXPOSE 3001
 
 CMD ["node", "--import", "tsx/esm", "worker/server.ts"]
+# redeploy trigger
