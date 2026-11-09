@@ -61,27 +61,25 @@ export async function pollQueued() {
   }
 }
 
-// ----- chamada à API Anthropic (substitui claude -p) -----
-async function callAnthropicApi(prompt: string): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY não configurada no worker.");
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+// ----- chamada à API Gemini Flash 2.0 -----
+async function callGeminiApi(prompt: string): Promise<string> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY não configurada no worker.");
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+  const res = await fetch(url, {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
+    headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      model: "claude-3-5-haiku-20241022", // rápido e barato para análise de texto
-      max_tokens: 1024,
-      messages: [{ role: "user", content: prompt }],
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.2 },
     }),
   });
-  if (!res.ok) throw new Error(`Anthropic API ${res.status}: ${await res.text()}`);
-  const data = (await res.json()) as { content?: { type: string; text: string }[] };
-  const text = data.content?.find((b) => b.type === "text")?.text ?? "";
-  if (!text) throw new Error("Resposta vazia da Anthropic API.");
+  if (!res.ok) throw new Error(`Gemini API ${res.status}: ${await res.text()}`);
+  const data = (await res.json()) as {
+    candidates?: { content?: { parts?: { text?: string }[] } }[];
+  };
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+  if (!text) throw new Error("Resposta vazia da Gemini API.");
   return text;
 }
 
@@ -116,7 +114,7 @@ async function runPipeline(sourceId: string) {
     const words = await transcribe(videoPath, source.language);
     await updateSource(sourceId, { transcript: words });
 
-    // 5. Escolher clipes com IA (Anthropic API) ou fallback
+    // 5. Escolher clipes com IA (Gemini Flash 2.0) ou fallback
     await setStatus(sourceId, "analyzing", "Analisando com IA…");
     const account = source.account_id ? await getAccount(source.account_id) : null;
     const segments = toSegments(words);
@@ -132,7 +130,7 @@ async function runPipeline(sourceId: string) {
         niche: source.niche,
         referenceTitle: source.reference_title,
       });
-      const raw = await callAnthropicApi(prompt);
+      const raw = await callGeminiApi(prompt);
       proposals = parseClips(raw, durationSeconds);
       aiUsed = true;
     } catch (aiErr) {
