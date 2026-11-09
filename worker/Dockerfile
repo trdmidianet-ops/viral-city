@@ -30,7 +30,6 @@ RUN npm ci --omit=dev
 WORKDIR /app
 ENV NODE_ENV=production
 ENV WORKER_DATA_DIR=/data
-VOLUME ["/data"]
 
 EXPOSE 3001
 
