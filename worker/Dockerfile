@@ -25,7 +25,7 @@ RUN npm ci --omit=dev
 
 # Instala deps do worker
 WORKDIR /app/worker
-RUN npm ci --omit=dev
+RUN npm install --omit=dev
 
 WORKDIR /app
 ENV NODE_ENV=production
