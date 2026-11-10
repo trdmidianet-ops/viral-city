@@ -158,10 +158,10 @@ async function runPipeline(sourceId: string) {
     for (const clip of allClips) {
       await updateClip(clip.id, { status: "rendering" });
       try {
-        const outPath = path.join(DATA_DIR, "clips", sourceId, `${clip.id}.mp4`);
-        await mkdir(path.dirname(outPath), { recursive: true });
+        const clipsBaseDir = path.join(DATA_DIR, "clips", sourceId);
+        await mkdir(clipsBaseDir, { recursive: true });
 
-        await renderClip({
+        const renderedPath = await renderClip({
           clip,
           sourcePath: videoPath,
           words: freshSource.transcript ?? [],
@@ -171,11 +171,10 @@ async function runPipeline(sourceId: string) {
           highlight: clip.caption_color,
           hookPosition: clip.hook_position,
           speed: clip.speed,
-          outPath,
-        });
+        }, clipsBaseDir);
 
         done++;
-        await updateClip(clip.id, { status: "rendered", local_path: outPath });
+        await updateClip(clip.id, { status: "rendered", local_path: renderedPath });
         await updateSource(sourceId, {
           progress: `${done} de ${total} corte${done !== 1 ? "s" : ""} prontos`,
         });
