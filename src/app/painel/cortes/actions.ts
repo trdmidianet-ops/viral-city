@@ -87,7 +87,6 @@ export async function createSourceAction(_: FormState, form: FormData): Promise<
     } catch {
       return { error: "Cole um link válido (http/https)." };
     }
-    if (form.get("permission") !== "on") return { error: "Confirme que você tem permissão do criador para cortar esse vídeo." };
     newSourceId = (await createSource(userId, { ...base, kind, source_url: url, title: str(form, "title", 120) })).id;
   } else if (kind === "file") {
     if (!canUseLocalFiles()) return { error: "Envio de arquivo só funciona no painel aberto no seu PC." };

@@ -1,10 +1,9 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Download, FileVideo, Link2, Scissors, Tv } from "lucide-react";
+import { Download, FileVideo, Scissors, Tv } from "lucide-react";
 import { createSourceAction, type FormState } from "./actions";
 import { useUpload } from "../use-upload";
-import { ImportarVideo } from "@/components/ImportarVideo";
 
 type Account = { id: string; name: string };
 type ChannelVideo = { id: string; title: string; thumbnail: string };
@@ -20,35 +19,29 @@ type Props = {
 const field = "mt-1 w-full rounded-lg border border-line bg-night/60 px-3 py-2.5 text-sm outline-none focus:border-pink";
 
 const allKinds = [
-  { id: "channel", label: "Meu canal", icon: Tv, local: false },
-  { id: "file", label: "Arquivo do PC", icon: FileVideo, local: true },
-  { id: "link", label: "Link autorizado", icon: Link2, local: false },
-  { id: "import", label: "YouTube/IG/TT", icon: Download, local: true },
+  { id: "channel", label: "Meu canal",    icon: Tv,        local: false },
+  { id: "file",    label: "Arquivo do PC", icon: FileVideo, local: true  },
+  { id: "link",    label: "Download",      icon: Download,  local: false },
 ] as const;
 
 type KindId = (typeof allKinds)[number]["id"];
 
 const framings = [
-  { id: "blur", label: "Fundo desfocado", hint: "Vídeo inteiro no meio, nunca corta ninguém" },
+  { id: "blur",   label: "Fundo desfocado", hint: "Vídeo inteiro no meio, nunca corta ninguém" },
   { id: "center", label: "Cortar no centro", hint: "Tela cheia, mais imersivo" },
-  { id: "split", label: "Dividido", hint: "Esquerda em cima, direita embaixo (podcast a dois)" },
+  { id: "split",  label: "Dividido",         hint: "Esquerda em cima, direita embaixo (podcast a dois)" },
 ] as const;
 
 export function SourceForm({ accounts, uploads, niches, defaults, localFiles }: Props) {
   const [state, action, pending] = useActionState<FormState, FormData>(createSourceAction, {});
-  const [kind, setKind] = useState<KindId>(accounts.length ? "channel" : localFiles ? "file" : "link");
+  const [kind, setKind] = useState<KindId>(accounts.length ? "channel" : "link");
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
   const { upload, progress, error: uploadError, send: sendFile } = useUpload();
-  const [importedFileId, setImportedFileId] = useState<string | null>(null);
 
   const videos = uploads[accountId] ?? [];
 
   // Filtra abas: local-only só aparecem se localFiles=true
   const kinds = allKinds.filter((k) => !k.local || localFiles);
-
-  function handleImported(fileId: string) {
-    setImportedFileId(fileId);
-  }
 
   return (
     <form action={action} className="glass space-y-5 rounded-2xl p-5 sm:p-6">
@@ -135,22 +128,6 @@ export function SourceForm({ accounts, uploads, niches, defaults, localFiles }: 
             <span className="text-muted">Nome do vídeo (opcional)</span>
             <input name="title" maxLength={120} className={field} />
           </label>
-          <label className="flex items-start gap-2 text-xs text-muted">
-            <input type="checkbox" name="permission" required className="mt-0.5 accent-pink" />
-            Tenho permissão do criador para cortar e publicar esse vídeo (ex.: campanha de clipping).
-          </label>
-        </div>
-      )}
-
-      {kind === "import" && (
-        <div className="space-y-3">
-          <ImportarVideo onImported={handleImported} />
-          {importedFileId && (
-            <p className="rounded-lg border border-line bg-night/40 p-3 text-xs text-muted">
-              Vídeo importado e pronto para corte. Clique em <span className="text-ink">Gerar 5 cortes</span> para continuar.
-            </p>
-          )}
-          <input type="hidden" name="importFileId" value={importedFileId ?? ""} />
         </div>
       )}
 
@@ -224,7 +201,7 @@ export function SourceForm({ accounts, uploads, niches, defaults, localFiles }: 
 
       <button
         type="submit"
-        disabled={pending || progress !== null || (kind === "file" && !upload) || (kind === "import" && !importedFileId)}
+        disabled={pending || progress !== null || (kind === "file" && !upload)}
         className="btn-sunset flex w-full items-center justify-center gap-2 rounded-full py-3 font-semibold text-white disabled:opacity-50 sm:w-auto sm:px-8"
       >
         <Scissors size={18} /> {pending ? "Enviando…" : "Gerar 5 cortes"}
