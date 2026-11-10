@@ -128,8 +128,8 @@ export function SourceForm({ accounts, uploads, niches, defaults, localFiles }: 
       {kind === "link" && (
         <div className="space-y-3 text-sm">
           <label className="block">
-            <span className="text-muted">Link do arquivo (Google Drive, Dropbox ou MP4 direto)</span>
-            <input name="url" type="url" required placeholder="https://drive.google.com/file/d/…" className={field} />
+            <span className="text-muted">Link do vídeo (YouTube, Google Drive, Dropbox ou MP4 direto)</span>
+            <input name="url" type="url" required placeholder="https://youtube.com/watch?v=… ou drive.google.com/…" className={field} />
           </label>
           <label className="block">
             <span className="text-muted">Nome do vídeo (opcional)</span>

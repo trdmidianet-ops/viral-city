@@ -87,9 +87,6 @@ export async function createSourceAction(_: FormState, form: FormData): Promise<
     } catch {
       return { error: "Cole um link válido (http/https)." };
     }
-    if (/youtube\.com|youtu\.be/i.test(url)) {
-      return { error: "Links do YouTube não são aceitos: use o link do arquivo (Drive, Dropbox ou MP4) enviado pela campanha." };
-    }
     if (form.get("permission") !== "on") return { error: "Confirme que você tem permissão do criador para cortar esse vídeo." };
     newSourceId = (await createSource(userId, { ...base, kind, source_url: url, title: str(form, "title", 120) })).id;
   } else if (kind === "file") {

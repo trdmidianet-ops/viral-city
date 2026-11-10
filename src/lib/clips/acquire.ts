@@ -24,9 +24,6 @@ export function directDownloadUrl(raw: string): string {
     url.searchParams.set("dl", "1");
     return url.toString();
   }
-  if (host === "youtube.com" || host === "youtu.be" || host.endsWith(".youtube.com")) {
-    throw new Error("Links do YouTube não são aceitos aqui: use “Meu canal” para vídeos seus, ou o link do arquivo enviado pela campanha.");
-  }
   return url.toString();
 }
 
@@ -102,7 +99,12 @@ export async function acquireSource(source: Source, baseDir: string): Promise<st
     await ytDlpUrl(source.source_url, target);
   } else if (source.kind === "link") {
     if (!source.source_url) throw new Error("Fonte sem link.");
-    await downloadLink(source.source_url, target);
+    const isYt = /youtube\.com|youtu\.be/i.test(source.source_url);
+    if (isYt) {
+      await ytDlpUrl(source.source_url, target);
+    } else {
+      await downloadLink(source.source_url, target);
+    }
   } else {
     if (!source.youtube_video_id || !source.account_id) throw new Error("Vídeo do canal sem identificação.");
     const account = await getAccount(source.account_id);
