@@ -4,6 +4,7 @@ import { nextCookies } from "better-auth/next-js";
 import { isGoogleLoginConfigured } from "@/lib/auth-config";
 import { authDb } from "@/lib/db";
 import { appUrl } from "@/lib/oauth/providers";
+import { sendPasswordResetEmail } from "@/lib/email";
 
 /**
  * Login próprio (Better Auth): usuários e sessões ficam no nosso Postgres, sem provedor
@@ -15,7 +16,14 @@ function create() {
     baseURL: appUrl(),
     secret: process.env.BETTER_AUTH_SECRET,
     database: authDb(),
-    emailAndPassword: { enabled: true, minPasswordLength: 8, autoSignIn: true },
+    emailAndPassword: {
+      enabled: true,
+      minPasswordLength: 8,
+      autoSignIn: true,
+      sendResetPassword: async ({ user, url }) => {
+        await sendPasswordResetEmail(user.email, url);
+      },
+    },
     socialProviders: isGoogleLoginConfigured()
       ? { google: { clientId: process.env.GOOGLE_CLIENT_ID!, clientSecret: process.env.GOOGLE_CLIENT_SECRET! } }
       : {},

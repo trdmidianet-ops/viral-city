@@ -2,7 +2,7 @@
  * Administradores da Viral City: usam tudo sem gastar CityCoins e veem o painel de admin.
  * Lista fixa aqui + ADMIN_EMAILS (separados por vírgula) nas variáveis de ambiente.
  */
-const DEFAULT_ADMINS = ["rafhael.mourasaraiva@gmail.com"];
+const DEFAULT_ADMINS = ["rafhael.mourasaraiva@gmail.com", "tarcisiomansur1998@gmail.com"];
 
 export function adminEmails(): string[] {
   const extra = (process.env.ADMIN_EMAILS ?? "").split(",");

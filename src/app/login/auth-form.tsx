@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { createAuthClient } from "better-auth/react";
 import { useActionState, useState } from "react";
 import { writeRefCookie } from "@/components/ref-capture";
@@ -73,6 +74,14 @@ export function AuthForm({ mode, next, google, coupon = "" }: { mode: "signin" |
             className="mt-1 w-full rounded-lg border border-line bg-night/60 px-3 py-2.5 outline-none focus:border-pink"
           />
         </label>
+
+        {mode === "signin" && (
+          <div className="text-right -mt-2">
+            <Link href="/login/esqueci-senha" className="text-xs text-muted hover:text-pink transition-colors">
+              Esqueceu a senha?
+            </Link>
+          </div>
+        )}
 
         {mode === "signup" && (
           <label className="block text-sm">
