@@ -11,7 +11,7 @@ const logo = Bungee({ variable: "--font-logo", weight: "400", subsets: ["latin"]
 const mono = Geist_Mono({ variable: "--font-code", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Viral City — cortes virais do seu vídeo longo",
+  title: "Viral City | cortes virais do seu vídeo longo",
   description:
     "A IA transforma seu vídeo longo em 5 Shorts com nota viral, legendas e enquadramento 9:16, e posta no seu canal do YouTube no horário certo.",
 };
