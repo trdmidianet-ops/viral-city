@@ -5,8 +5,26 @@ import { redirect } from "next/navigation";
 import { requireUserId } from "@/lib/auth";
 import { isDbConfigured } from "@/lib/db";
 import { deleteScaleJob, getOwnedScaleJob, getOwnedVariation, updateScaleJob, updateVariation } from "@/lib/scale/repo";
+import { createSource } from "@/lib/clips/repo";
 import { approveAllVariations, approveVariation, createScale } from "@/lib/scale/service";
 import { isTemplateId } from "@/lib/scale/templates";
+
+/** Avisa o worker externo (Railway) para começar a processar a source. */
+async function notifyWorker(sourceId: string): Promise<void> {
+  const url = process.env.WORKER_URL;
+  const secret = process.env.WORKER_SECRET;
+  if (!url) return;
+  try {
+    await fetch(`${url}/process`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-worker-secret": secret ?? "" },
+      body: JSON.stringify({ sourceId }),
+      signal: AbortSignal.timeout(5_000),
+    });
+  } catch (e) {
+    console.warn("[worker] notify error:", e);
+  }
+}
 
 export type ScaleFormState = { error?: string };
 
@@ -15,6 +33,35 @@ const str = (f: FormData, k: string, max: number) => String(f.get(k) ?? "").trim
 
 export async function createScaleAction(_: ScaleFormState, form: FormData): Promise<ScaleFormState> {
   if (!isDbConfigured()) return { error: "Banco de dados não configurado." };
+  // Modo URL: cria source (pipeline Cortes) e notifica worker
+  const baseValue = str(form, "base", 10);
+  if (baseValue === "url") {
+    const rawUrl = str(form, "url", 1000);
+    try {
+      const u = new URL(rawUrl);
+      if (!["http:", "https:"].includes(u.protocol)) throw new Error();
+    } catch {
+      return { error: "Cole um link válido (http/https)." };
+    }
+    const userId = await requireUserId();
+    const source = await createSource(userId, {
+      kind: "link",
+      account_id: null,
+      language: "portuguese",
+      framing: "center",
+      captions: true,
+      use_logo: false,
+      niche: null,
+      reference_title: null,
+      youtube_video_id: null,
+      source_url: rawUrl,
+      upload_name: null,
+      title: rawUrl,
+    });
+    await notifyWorker(source.id);
+    redirect(`/painel/cortes/${source.id}`);
+  }
+
   const result = await createScale(await requireUserId(), {
     base: str(form, "base", 10) as "clip" | "file",
     clipId: str(form, "clip", 40),
