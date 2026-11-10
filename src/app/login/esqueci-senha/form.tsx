@@ -16,7 +16,7 @@ export function ForgotPasswordForm() {
     setError("");
     setPending(true);
     try {
-      await authClient.forgetPassword({
+      await authClient.requestPasswordReset({
         email,
         redirectTo: "/login/nova-senha",
       });
