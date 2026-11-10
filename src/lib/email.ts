@@ -1,15 +1,14 @@
 import "server-only";
+import { Resend } from "resend";
 
 /**
  * Envio de e-mails transacionais via Resend.
  * Requer RESEND_API_KEY no ambiente.
  */
 
-function getResend() {
+function getResend(): Resend | null {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) return null;
-  // importação dinâmica para não quebrar se a chave não estiver presente
-  const { Resend } = require("resend");
   return new Resend(apiKey);
 }
 

@@ -11,7 +11,7 @@ export function ResetPasswordForm({
 }: {
   searchParams: Promise<{ token?: string; error?: string }>;
 }) {
-  const { token, error: urlError } = use(searchParams);
+  const { token } = use(searchParams);
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
