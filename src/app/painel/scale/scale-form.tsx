@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Clapperboard, FileVideo, Layers, Sparkles } from "lucide-react";
+import { Clapperboard, FileVideo, Layers, Link2, Sparkles } from "lucide-react";
 import { COINS_PER_VARIATION, MAX_VARIATIONS, formatCoins } from "@/lib/coins/pricing";
 import { TEMPLATES, usesCta, type TemplateId } from "@/lib/scale/templates";
 import { createScaleAction, type ScaleFormState } from "./actions";
@@ -22,7 +22,7 @@ const field = "mt-1 w-full rounded-lg border border-line bg-night/60 px-3 py-2.5
 
 export function ScaleForm({ clips, accounts, localFiles, initial }: Props) {
   const [state, action, pending] = useActionState<ScaleFormState, FormData>(createScaleAction, {});
-  const [base, setBase] = useState<"clip" | "file">(clips.length || !localFiles ? "clip" : "file");
+  const [base, setBase] = useState<"clip" | "file" | "url">(clips.length || !localFiles ? "clip" : "file");
   const [count, setCount] = useState(initial.count);
   const [selected, setSelected] = useState<TemplateId[]>(initial.template ? [initial.template] : ["perfil", "perfil-cta", "tweet-escuro"]);
   const [accountId, setAccountId] = useState(accounts[0]?.id ?? "");
@@ -35,7 +35,7 @@ export function ScaleForm({ clips, accounts, localFiles, initial }: Props) {
   const [handle, setHandle] = useState(account?.handle ?? SAMPLE_PROFILE.handle);
   const [verified, setVerified] = useState(true);
   const [headlines, setHeadlines] = useState("");
-  const [cta, setCta] = useState("se você curte gta 6, precisa seguir essa página");
+  const [cta, setCta] = useState("se vocà curte gta 6, precisa seguir essa página");
   const [previewIndex, setPreviewIndex] = useState(0);
   const preview = selected[Math.min(previewIndex, selected.length - 1)] ?? "perfil";
   const firstHeadline = headlines.split(/\r?\n/).map((h) => h.trim()).find(Boolean);
@@ -55,10 +55,11 @@ export function ScaleForm({ clips, accounts, localFiles, initial }: Props) {
       {/* 1. vídeo base */}
       <fieldset>
         <legend className="text-sm font-semibold">1. Vídeo base</legend>
-        <div role="tablist" aria-label="Vídeo base" className="mt-2 grid grid-cols-2 gap-2">
+        <div role="tablist" aria-label="Vídeo base" className="mt-2 grid grid-cols-3 gap-2">
           {[
             { id: "clip" as const, label: "Corte pronto", icon: Clapperboard },
             { id: "file" as const, label: "Clipe do PC", icon: FileVideo },
+            { id: "url" as const, label: "Link do YouTube", icon: Link2 },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -77,7 +78,7 @@ export function ScaleForm({ clips, accounts, localFiles, initial }: Props) {
 
         {base === "clip" &&
           (clips.length === 0 ? (
-            <p className="mt-3 text-sm text-muted">Você ainda não tem cortes renderizados. Gere em Cortes ou suba um clipe do PC.</p>
+            <p className="mt-3 text-sm text-muted">Vocà ainda não tem cortes renderizados. Use "Link do YouTube" para gerar ou suba um clipe do PC.</p>
           ) : (
             <label className="mt-3 block text-sm">
               <span className="text-muted">Corte</span>
@@ -112,6 +113,22 @@ export function ScaleForm({ clips, accounts, localFiles, initial }: Props) {
           ) : (
             <p className="mt-3 text-sm text-muted">O envio de arquivo funciona só no painel aberto no seu PC (localhost:3000).</p>
           ))}
+
+        {base === "url" && (
+          <div className="mt-3 text-sm">
+            <label className="block">
+              <span className="text-muted">Link do vídeo (YouTube, Drive, qualquer URL direta)</span>
+              <input
+                name="url"
+                type="url"
+                required={base === "url"}
+                placeholder="https://youtube.com/watch?v=… ou outro link"
+                className={field}
+              />
+            </label>
+            <p className="mt-2 text-xs text-muted">O vídeo será baixado, cortado pela IA e os clipes aparecerão aqui prontos para Scale.</p>
+          </div>
+        )}
       </fieldset>
 
       {/* 2. templates */}
@@ -224,7 +241,7 @@ export function ScaleForm({ clips, accounts, localFiles, initial }: Props) {
           disabled={pending || progress !== null || (base === "file" && !upload) || (base === "clip" && !clips.length)}
           className="btn-sunset flex items-center justify-center gap-2 rounded-full px-8 py-3 font-semibold text-white disabled:opacity-50"
         >
-          <Layers size={18} /> {pending ? "Enviando…" : `Gerar ${count} ${count === 1 ? "versão" : "versões"}`}
+          <Layers size={18} /> {pending ? "Enviando…" : base === "url" ? "Gerar Cortes" : `Gerar ${count} ${count === 1 ? "versão" : "versões"}`}
         </button>
         <span className="text-sm text-muted">
           Custa <span className="num font-semibold text-sun">{formatCoins(count * COINS_PER_VARIATION)}</span> CityCoins · as que falharem voltam para a carteira
