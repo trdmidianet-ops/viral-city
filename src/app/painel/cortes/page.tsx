@@ -68,10 +68,7 @@ export default async function CortesPage({ searchParams }: { searchParams: Promi
             <li>Cada corte sai em 9:16 com texto no topo, logo do canal e legendas animadas.</li>
             <li>Assista, ajuste o texto e aprove: o corte entra na Agenda e é postado no próximo horário.</li>
           </ol>
-          <p className="mt-4 text-xs">
-            Só corte vídeos seus ou com permissão do criador. Conteúdo de terceiros sem autorização gera strike e não monetiza.
-          </p>
-        </aside>
+                  </aside>
       </div>
 
       <section className="mt-8">
