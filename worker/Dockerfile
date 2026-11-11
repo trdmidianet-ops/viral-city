@@ -34,4 +34,4 @@ ENV WORKER_DATA_DIR=/data
 EXPOSE 3001
 
 CMD ["./node_modules/.bin/tsx", "worker/server.ts"]
-# redeploy trigger
+# redeploy trigger — aceita links do YouTube (acquire.ts)
