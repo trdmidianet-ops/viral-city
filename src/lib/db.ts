@@ -64,12 +64,29 @@ async function workerPool(): Promise<Pool> {
       let cs = raw;
       try {
         const u = new URL(raw);
-        const [ipv4] = await resolve4(u.hostname);
-        u.hostname = ipv4;
-        cs = u.toString();
-        console.log(`[db] Neon→IPv4: ${ipv4}`);
+        // Supabase direct connection (db.PROJECT.supabase.co) só tem registros AAAA (IPv6).
+        // Railway US East não roteia IPv6 → reescreve para o pooler do Supabase que tem IPv4.
+        // O pooler usa o mesmo password, só muda host e user (postgres.PROJECT_REF).
+        const supaMatch = u.hostname.match(/^db\.([a-z0-9]+)\.supabase\.co$/);
+        if (supaMatch) {
+          const projectRef = supaMatch[1];
+          // Obtém a região do pooler a partir das variáveis de ambiente ou deduz pelo hostname.
+          // Para eu-west-3 (Paris) o pooler fica em aws-0-eu-west-3.pooler.supabase.com.
+          const poolerRegion = process.env.SUPABASE_POOLER_REGION ?? "eu-west-3";
+          u.hostname = `aws-0-${poolerRegion}.pooler.supabase.com`;
+          u.username = `postgres.${projectRef}`;
+          u.port = "5432"; // session mode — suporta prepared statements
+          cs = u.toString();
+          console.log(`[db] Supabase pooler (IPv4): ${u.hostname}`);
+        } else {
+          // Neon ou outro provedor: tenta forçar IPv4 via resolve4
+          const [ipv4] = await resolve4(u.hostname);
+          u.hostname = ipv4;
+          cs = u.toString();
+          console.log(`[db] DB→IPv4: ${ipv4}`);
+        }
       } catch (e) {
-        console.warn(`[db] dns.resolve4 falhou, usando hostname original: ${e}`);
+        console.warn(`[db] workerPool setup falhou, usando hostname original: ${e}`);
       }
       _workerPool = new Pool({ connectionString: cs, max: maxConnections(), types: appTypes });
       return _workerPool;
