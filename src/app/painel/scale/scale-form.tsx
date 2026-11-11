@@ -78,7 +78,7 @@ export function ScaleForm({ clips, accounts, localFiles, initial }: Props) {
 
         {base === "clip" &&
           (clips.length === 0 ? (
-            <p className="mt-3 text-sm text-muted">Vocà ainda não tem cortes renderizados. Use "Link do YouTube" para gerar ou suba um clipe do PC.</p>
+            <p className="mt-3 text-sm text-muted">Vocà ainda não tem cortes renderizados. Use &quot;Link do YouTube&quot; para gerar ou suba um clipe do PC.</p>
           ) : (
             <label className="mt-3 block text-sm">
               <span className="text-muted">Corte</span>
