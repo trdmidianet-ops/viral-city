@@ -3,6 +3,11 @@
  * Servidor HTTP do worker — recebe webhooks do Vercel e faz polling de fallback.
  */
 
+// Railway US East não roteia IPv6 → força todas as resoluções DNS a preferir IPv4.
+// Deve vir antes de qualquer import que abra sockets (pg, fetch, etc.).
+import { setDefaultResultOrder } from "node:dns";
+setDefaultResultOrder("ipv4first");
+
 import express from "express";
 import { enqueue, pollQueued } from "./process.js";
 
