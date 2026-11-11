@@ -65,8 +65,7 @@ export default async function ScalePage({ searchParams }: { searchParams: Promis
             <li>Cada versão sai com template, manchete e pequenas diferenças de edição (zoom, ritmo e início).</li>
             <li>Aprove uma a uma ou todas de uma vez: elas entram na Agenda.</li>
           </ul>
-          <p className="mt-4 text-xs">Use só vídeos seus ou com permissão. Conteúdo de terceiros sem autorização gera strike.</p>
-          <Link href="/painel/templates" className="mt-4 inline-block text-pink hover:underline">
+                    <Link href="/painel/templates" className="mt-4 inline-block text-pink hover:underline">
             Ver a galeria de templates →
           </Link>
         </aside>
