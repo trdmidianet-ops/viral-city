@@ -1,8 +1,12 @@
 import { Pool, types, type CustomTypesConfig, type QueryResultRow } from "pg";
+import { resolve4 } from "node:dns/promises";
 
 /**
  * Banco da Viral City: Postgres comum (Neon em produção, mas roda em qualquer Postgres),
  * acessado só pelo servidor e pelo worker com DATABASE_URL. Sem dependência de provedor.
+ *
+ * NOTA: Railway US East não roteia IPv6. Neon retorna apenas endereços IPv6 no DNS
+ * daquela região, então forçamos resolução IPv4 (resolve4) antes de criar o Pool.
  */
 
 // Tipos do Postgres em formatos fáceis de usar no app (e iguais aos que o painel já espera):
@@ -43,7 +47,43 @@ export function authDb(): Pool {
   return authPool;
 }
 
+// ---------------------------------------------------------------------------
+// Pool com resolução IPv4 explícita (worker em Railway US East, sem rota IPv6)
+// ---------------------------------------------------------------------------
+// Na primeira query, resolvemos o hostname do Neon via dns.resolve4() para obter
+// um endereço IPv4 puro. O Pool usa esse IP diretamente, evitando ENETUNREACH.
+let _workerPool: Pool | null = null;
+let _workerPoolInit: Promise<Pool> | null = null;
+
+async function workerPool(): Promise<Pool> {
+  if (_workerPool) return _workerPool;
+  if (!_workerPoolInit) {
+    _workerPoolInit = (async () => {
+      const raw = process.env.DATABASE_URL;
+      if (!raw) throw new Error("DATABASE_URL não configurado.");
+      let cs = raw;
+      try {
+        const u = new URL(raw);
+        const [ipv4] = await resolve4(u.hostname);
+        u.hostname = ipv4;
+        cs = u.toString();
+        console.log(`[db] Neon→IPv4: ${ipv4}`);
+      } catch (e) {
+        console.warn(`[db] dns.resolve4 falhou, usando hostname original: ${e}`);
+      }
+      _workerPool = new Pool({ connectionString: cs, max: maxConnections(), types: appTypes });
+      return _workerPool;
+    })();
+  }
+  return _workerPoolInit;
+}
+
 export async function query<T extends QueryResultRow>(text: string, params: unknown[] = []): Promise<T[]> {
+  // No worker (Railway), usa pool com IPv4 explícito para evitar ENETUNREACH.
+  // Na Vercel/local, process.env.RAILWAY_ENVIRONMENT não existe e cai no fallback síncrono.
+  if (process.env.RAILWAY_ENVIRONMENT) {
+    return (await (await workerPool()).query<T>(text, params)).rows;
+  }
   return (await db().query<T>(text, params)).rows;
 }
 
