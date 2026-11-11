@@ -48,7 +48,7 @@ export function enqueue(sourceId: string) {
 // ----- polling (fallback + boot) -----
 export async function pollQueued() {
   while (running.size < MAX_CONCURRENT) {
-    await recoverStuckClips(30); // devolve cortes travados há >30min
+    await recoverStuckClips(10); // devolve cortes/sources travados há >10min
     const source = await claimNextSource(); // atômico: dois workers nunca pegam o mesmo
     if (!source) break; // fila vazia
     running.add(source.id);

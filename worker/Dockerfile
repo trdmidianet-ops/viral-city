@@ -30,8 +30,18 @@ RUN npm install --omit=dev
 WORKDIR /app
 ENV NODE_ENV=production
 ENV WORKER_DATA_DIR=/data
+# Cache do HuggingFace: modelo fica no layer do Docker, não há download em produção
+ENV HF_HOME=/app/.hf-cache
+
+# Pré-baixa o modelo Whisper durante o build (~80 MB, evita cold-start + timeout)
+RUN node --input-type=module <<'EOF'
+import { pipeline } from "@huggingface/transformers";
+await pipeline("automatic-speech-recognition", "onnx-community/whisper-base_timestamped", { dtype: "q8" });
+console.log("[build] Whisper model cached OK");
+process.exit(0);
+EOF
 
 EXPOSE 3001
 
 CMD ["./node_modules/.bin/tsx", "worker/server.ts"]
-# redeploy trigger — aceita links do YouTube (acquire.ts)
+# redeploy trigger — whisper pre-cached in Docker layer
