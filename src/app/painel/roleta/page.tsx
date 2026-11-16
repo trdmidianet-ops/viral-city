@@ -34,11 +34,14 @@ export default async function RoletaPage() {
       <PageHeader title="Roleta" subtitle={subtitle} />
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <section className="glass rounded-2xl p-6 sm:p-8 lg:col-span-3">
-          <Wheel spins={spins.count} minCost={MIN_SOURCE_COINS} />
-          {spins.count > 0 && spins.nextExpiry && (
-            <p className="mt-4 text-center text-xs text-muted">Seu giro mais antigo vale até {day(spins.nextExpiry)}.</p>
-          )}
+        <section className="vc-roleta-stage relative overflow-hidden rounded-2xl border border-pink/30 lg:col-span-3">
+          <div aria-hidden="true" className="vc-roleta-floor" />
+          <div className="relative px-5 pb-32 pt-8 sm:px-8 sm:pt-10">
+            <Wheel spins={spins.count} minCost={MIN_SOURCE_COINS} />
+            {spins.count > 0 && spins.nextExpiry && (
+              <p className="mt-4 text-center text-xs text-ink/75">Seu giro mais antigo vale até {day(spins.nextExpiry)}.</p>
+            )}
+          </div>
         </section>
 
         <div className="space-y-6 lg:col-span-2">

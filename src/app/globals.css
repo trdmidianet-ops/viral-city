@@ -162,9 +162,65 @@ html:not(.vc-js) .vc-reveal {
   }
 }
 
+/* ---------- roleta (painel) ---------- */
+/* palco: céu de pôr do sol com o brilho atrás da roda */
+.vc-roleta-stage {
+  background:
+    radial-gradient(ellipse 62% 46% at 50% 36%, rgba(255, 138, 61, 0.32), rgba(255, 46, 136, 0.12) 55%, transparent 75%),
+    linear-gradient(180deg, #120828 0%, #24104a 48%, #5a1a5e 84%, #8f1f6b 100%);
+}
+/* chão em grade neon, no pé do palco */
+.vc-roleta-floor {
+  position: absolute;
+  inset: auto -30% 0;
+  height: 96px;
+  background:
+    linear-gradient(rgba(255, 46, 136, 0.75) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, rgba(255, 46, 136, 0.75) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(180deg, #2a0a3a, #0b0618);
+  transform: perspective(200px) rotateX(58deg);
+  transform-origin: bottom center;
+  border-top: 2px solid rgba(255, 46, 136, 0.9);
+  box-shadow: 0 -6px 24px rgba(255, 46, 136, 0.6);
+  animation: grid-move 3s linear infinite;
+}
+/* moedas saltando do centro da roda */
+.vc-coin-pop {
+  opacity: 0;
+  animation: vc-coin-pop 1s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+@keyframes vc-coin-pop {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1) rotate(var(--rot));
+  }
+}
+/* cartão do prêmio entrando */
+.vc-prize-in {
+  animation: vc-prize-in 0.45s cubic-bezier(0.2, 0.9, 0.2, 1.2);
+}
+@keyframes vc-prize-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.94);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .retro-grid,
-  .vc-blink {
+  .vc-blink,
+  .vc-roleta-floor,
+  .vc-prize-in {
     animation: none;
+  }
+  .vc-coin-pop {
+    display: none;
   }
 }
