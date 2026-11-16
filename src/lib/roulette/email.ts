@@ -42,8 +42,13 @@ export function spinEmailHtml(name: string): string {
 </html>`;
 }
 
-/** Devolve true se o e-mail foi entregue ao Resend. */
+/**
+ * Devolve true se o e-mail foi entregue ao Resend.
+ * Fica desligado até ROULETTE_EMAILS=on no worker: é um e-mail promocional e só deve ser ligado
+ * quando o usuário tiver como deixar de receber.
+ */
 export async function sendSpinEmail(email: string, name: string): Promise<boolean> {
+  if (process.env.ROULETTE_EMAILS !== "on") return false;
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.log("[roleta] e-mail de giro não enviado (sem RESEND_API_KEY)");
