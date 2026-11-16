@@ -9,7 +9,7 @@ const steps: Step[] = [
   { who: "ia", title: "Ouve cada palavra", text: "Transcreve a fala inteira para entender o conteúdo, não só o áudio." },
   { who: "ia", title: "Encontra os ganchos", text: "Localiza os trechos com mais chance de prender quem está rolando o feed." },
   { who: "ia", title: "Dá nota e explica", text: "Cada corte recebe uma nota viral e o motivo da escolha." },
-  { who: "ia", title: "Enquadra em 9:16", text: "Fundo desfocado, centralizado ou tela dividida, pronto para Shorts." },
+  { who: "ia", title: "Enquadra em 9:16", text: "Fundo desfocado, centralizado ou tela dividida, pronto para Shorts, Reels e TikTok." },
   { who: "ia", title: "Legenda palavra por palavra", text: "Com o texto de gancho no topo e a logo do seu canal." },
   { who: "you", title: "Aprova o que gostar", text: "Nada vai ao ar sem o seu ok. Você escolhe os dias e horários." },
   { who: "ia", title: "Publica na hora certa", text: "Os cortes aprovados entram na fila e saem no seu canal do YouTube." },

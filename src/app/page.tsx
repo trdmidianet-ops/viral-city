@@ -48,9 +48,9 @@ export default function Home() {
         </HeroReveal>
         <div className="relative z-10 mx-auto grid w-full max-w-6xl items-center gap-10 px-4 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
           <HeroReveal className="text-center lg:text-left">
-            <span className="glass-flat inline-flex items-center gap-2.5 whitespace-nowrap rounded-full px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.1em] text-cyan sm:text-xs sm:tracking-[0.18em]">
+            <span className="glass-flat inline-flex items-center gap-2.5 whitespace-nowrap rounded-full px-3.5 py-1.5 font-mono text-[11px] uppercase tracking-[0.04em] text-cyan sm:text-xs sm:tracking-[0.18em]">
               <span className="vc-blink h-1.5 w-1.5 rounded-full bg-cyan shadow-[0_0_10px_var(--cyan)]" />
-              IA de cortes para YouTube Shorts
+              IA de cortes para Shorts, Reels e TikTok
             </span>
             <h1 className="mt-6 font-serif text-5xl leading-[0.98] tracking-[-0.01em] [filter:drop-shadow(0_2px_18px_rgba(11,6,24,0.9))] sm:text-6xl lg:text-7xl">
               A IA que encontra os <span className="text-sunset pr-1 italic">virais escondidos</span> no seu vídeo longo.
