@@ -12,8 +12,8 @@ export function ScorePreview() {
   const r = 42;
   const len = 2 * Math.PI * r;
   return (
-    <div className="flex items-center gap-5">
-      <div className="relative h-28 w-28 shrink-0">
+    <div className="flex flex-wrap items-center gap-x-7 gap-y-5">
+      <div className="relative h-32 w-32 shrink-0">
         <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
           <defs>
             <linearGradient id="vc-score" x1="0" x2="1" y1="0" y2="1">
@@ -41,7 +41,11 @@ export function ScorePreview() {
           <span className="font-mono text-[9px] uppercase tracking-widest text-muted">nota viral</span>
         </div>
       </div>
-      <ul className="min-w-0 flex-1 space-y-2.5">
+      <ul className="min-w-[220px] flex-1 space-y-2.5">
+        <li className="pb-1.5 font-mono text-xs leading-relaxed text-cyan">
+          motivo da IA: abre com uma confissão, cria curiosidade nos 3 primeiros segundos e fecha com uma lição
+          prática.
+        </li>
         {TOP_CUTS.map((c, i) => (
           <li key={c.label}>
             <div className="flex justify-between gap-2 text-xs">
@@ -112,7 +116,7 @@ const WORDS = ["ISSO", "MUDOU", "TUDO", "PRA", "MIM"];
 
 export function CaptionsPreview() {
   return (
-    <div className="flex h-full min-h-[96px] items-center justify-center rounded-xl bg-[linear-gradient(160deg,#2a1150,#a2246a_70%,#ff8a3d)] px-3">
+    <div className="flex h-full min-h-[150px] items-center justify-center bg-[linear-gradient(160deg,#2a1150,#a2246a_70%,#ff8a3d)] px-3">
       <p className="text-center font-heading text-xl font-extrabold tracking-tight [text-shadow:0_2px_0_#0b0618]">
         {WORDS.map((w, i) => (
           <span key={w + i} className="vc-word mx-0.5 inline-block" style={{ animationDelay: `${i * 0.45}s` }}>

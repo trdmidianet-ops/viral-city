@@ -14,20 +14,27 @@ function Feature({
   title,
   text,
   preview,
+  flush = false,
   className = "",
   delay = 0,
 }: {
   title: string;
   text: string;
   preview: ReactNode;
+  /** a prévia já tem fundo próprio e ocupa o quadro inteiro */
+  flush?: boolean;
   className?: string;
   delay?: number;
 }) {
   return (
-    <Reveal as="article" delay={delay} className={`vc-card flex flex-col gap-5 rounded-2xl p-5 sm:p-6 ${className}`}>
-      <div className="flex-1">{preview}</div>
+    <Reveal as="article" delay={delay} className={`vc-card flex flex-col gap-6 rounded-2xl p-6 sm:p-7 ${className}`}>
+      <div
+        className={`flex min-h-[150px] flex-1 items-center justify-center overflow-hidden rounded-xl bg-night ring-1 ring-white/[0.06] ${flush ? "" : "p-5"}`}
+      >
+        <div className={flush ? "h-full w-full self-stretch" : "w-full"}>{preview}</div>
+      </div>
       <div>
-        <h3 className="font-semibold">{title}</h3>
+        <h3 className="text-lg font-semibold">{title}</h3>
         <p className="mt-1.5 text-sm leading-relaxed text-muted">{text}</p>
       </div>
     </Reveal>
@@ -36,53 +43,61 @@ function Feature({
 
 export function Features() {
   return (
-    <section id="recursos" className="vc-recursos relative scroll-mt-20 overflow-hidden py-28">
-      <div aria-hidden="true" className="vc-recursos-floor" />
+    <section id="recursos" className="vc-recursos relative scroll-mt-16 overflow-hidden py-24 sm:py-28">
       <div className="relative mx-auto max-w-6xl px-4">
-        <SectionTitle eyebrow="Recursos" tone="cyan">
-          Tudo para <Accent>viralizar</Accent>
+        <SectionTitle
+          index="02"
+          eyebrow="Recursos"
+          lead="Ela não escreve e-mail nem gera imagem. Faz um trabalho: tirar Shorts fortes de vídeos longos e colocá-los no ar."
+        >
+          Uma IA treinada para <Accent>uma coisa só.</Accent>
         </SectionTitle>
 
-        <div className="mt-16 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Feature
-            className="lg:col-span-2"
-            title="Nota viral em cada corte"
-            text="Cada trecho vem com nota e o motivo da escolha, para você publicar primeiro o que tem mais chance."
+            className="md:col-span-2"
+            title="Nota viral com o motivo"
+            text="Você não recebe só o corte. Recebe o raciocínio da IA, para publicar primeiro o que tem mais chance."
             preview={<ScorePreview />}
           />
           <Feature
-            className="lg:row-span-2"
             delay={100}
-            title="Vertical 9:16 sem esforço"
-            text="Enquadramento com fundo desfocado, centralizado ou tela dividida, pronto para Shorts."
+            title="Vertical 9:16 automático"
+            text="Três enquadramentos prontos, sem abrir editor."
             preview={<FramingPreview />}
           />
           <Feature
-            delay={60}
-            title="Legendas e sua logo"
-            text="Legendas automáticas palavra por palavra, texto de gancho no topo e a logo do seu canal."
+            flush
+            title="Legendas palavra por palavra"
+            text="Sincronizadas com a fala, com gancho no topo e a sua logo."
             preview={<CaptionsPreview />}
           />
           <Feature
-            delay={120}
+            delay={60}
             title="Radar de tendências"
-            text="Veja os Shorts que estão bombando no seu nicho e use os ganchos como inspiração."
+            text="Os Shorts em alta no seu nicho, para inspirar ganchos e formatos."
             preview={<RadarPreview />}
           />
           <Feature
-            className="lg:col-span-2"
-            delay={60}
+            delay={120}
             title="Agenda autônoma"
-            text="Grade semanal por canal: os cortes aprovados entram na fila e saem no horário certo."
+            text="Grade semanal por canal. O que você aprovou sai sozinho."
             preview={<SchedulePreview />}
           />
-          <Feature
-            delay={120}
-            title="Seu conteúdo, conexão oficial"
-            text="Só cortamos vídeos seus ou com autorização, e a conexão com o YouTube é a oficial do Google."
-            preview={<SecurePreview />}
-          />
         </div>
+
+        <Reveal className="vc-card mt-6 flex flex-wrap items-center gap-x-10 gap-y-4 rounded-2xl p-5 sm:px-7">
+          <div className="w-full sm:w-[300px]">
+            <SecurePreview />
+          </div>
+          <div className="min-w-[240px] flex-1">
+            <h3 className="font-semibold">Seu conteúdo, conexão oficial</h3>
+            <p className="mt-1 text-sm leading-relaxed text-muted">
+              A IA só corta vídeos seus ou com autorização. O acesso ao YouTube é pelo login oficial do Google, e
+              nenhuma senha fica guardada.
+            </p>
+          </div>
+        </Reveal>
       </div>
     </section>
   );

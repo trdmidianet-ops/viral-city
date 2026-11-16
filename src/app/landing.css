@@ -11,38 +11,6 @@
   transform: none;
 }
 
-/* ---------- títulos ---------- */
-.vc-eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-family: var(--font-code), ui-monospace, monospace;
-  font-size: 0.75rem;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  color: var(--tone);
-  text-shadow: 0 0 12px var(--tone);
-}
-.vc-eyebrow::before,
-.vc-eyebrow::after {
-  content: "";
-  width: 2.5rem;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--tone));
-}
-.vc-eyebrow::after {
-  transform: scaleX(-1);
-}
-.vc-eyebrow-pink {
-  --tone: var(--pink);
-}
-.vc-eyebrow-cyan {
-  --tone: var(--cyan);
-}
-.vc-eyebrow-sun {
-  --tone: var(--sun);
-}
-
 /* ---------- cartões com borda neon no hover ---------- */
 .vc-card {
   position: relative;
@@ -72,33 +40,7 @@
   opacity: 1;
 }
 
-/* ---------- como funciona ---------- */
-.vc-wire {
-  background: repeating-linear-gradient(90deg, var(--pink) 0 10px, transparent 10px 18px);
-  box-shadow: 0 0 10px rgba(255, 46, 136, 0.7);
-  animation: vc-wire 1.2s linear infinite;
-  opacity: 0.7;
-}
-@keyframes vc-wire {
-  to {
-    background-position: 18px 0;
-  }
-}
-
-.vc-upload {
-  width: 0;
-  animation: vc-upload 3.2s ease-in-out infinite;
-}
-@keyframes vc-upload {
-  0% {
-    width: 0;
-  }
-  75%,
-  100% {
-    width: 100%;
-  }
-}
-
+/* ---------- painel da IA no hero e agenda ---------- */
 .vc-playhead {
   left: 0;
   animation: vc-playhead 4.5s linear infinite;
@@ -210,76 +152,12 @@
   }
 }
 
-/* fundo da seção de recursos: brilho roxo e a grade no chão */
+/* fundo da seção de recursos: brilho roxo no topo */
 .vc-recursos {
-  background:
-    radial-gradient(ellipse 60% 40% at 50% 0%, rgba(139, 61, 255, 0.22), transparent 70%),
-    linear-gradient(180deg, var(--night-2), var(--night));
-  border-block: 1px solid var(--line);
-}
-.vc-recursos-floor {
-  position: absolute;
-  inset: auto -20% 0;
-  height: 340px;
-  background-image:
-    linear-gradient(rgba(34, 211, 238, 0.28) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.28) 1px, transparent 1px);
-  background-size: 64px 64px;
-  transform: perspective(380px) rotateX(64deg);
-  transform-origin: bottom center;
-  mask-image: linear-gradient(to top, black, transparent 90%);
-  pointer-events: none;
-}
-
-/* ---------- vitrine de Shorts ---------- */
-.vc-showcase {
-  background: radial-gradient(ellipse 50% 60% at 50% 60%, rgba(255, 46, 136, 0.12), transparent 70%);
-}
-.vc-showcase-row {
-  mask-image: linear-gradient(90deg, transparent, black 10%, black 90%, transparent);
-}
-.vc-showcase-track {
-  animation: vc-marquee 55s linear infinite;
-}
-.vc-showcase-row:hover .vc-showcase-track {
-  animation-play-state: paused;
-}
-@keyframes vc-marquee {
-  to {
-    transform: translateX(-50%);
-  }
-}
-.vc-short {
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14), 0 24px 50px -20px rgba(255, 46, 136, 0.55);
-  transition: transform 0.35s ease, box-shadow 0.35s ease;
-}
-.vc-short:nth-child(even) {
-  transform: translateY(18px);
-}
-.vc-short:hover {
-  transform: translateY(-6px) scale(1.04);
-  box-shadow: 0 0 0 1px rgba(255, 46, 136, 0.6), 0 30px 60px -18px rgba(255, 46, 136, 0.85);
-}
-.vc-progress {
-  width: 0;
-  animation: vc-progress 8s linear infinite;
-}
-@keyframes vc-progress {
-  to {
-    width: 100%;
-  }
+  background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(139, 61, 255, 0.18), transparent 70%);
 }
 
 /* ---------- FAQ ---------- */
-.vc-faq {
-  background: linear-gradient(180deg, rgba(30, 17, 64, 0.6), rgba(20, 10, 42, 0.45));
-  border: 1px solid var(--line);
-  transition: border-color 0.3s ease, box-shadow 0.3s ease;
-}
-.vc-faq[open] {
-  border-color: rgba(255, 46, 136, 0.45);
-  box-shadow: 0 0 0 1px rgba(255, 46, 136, 0.15), 0 18px 40px -24px rgba(255, 46, 136, 0.6);
-}
 .vc-faq[open] .vc-faq-answer {
   animation: vc-faq-in 0.35s ease;
 }
@@ -379,23 +257,19 @@
     transform: none;
     transition: opacity 0.4s ease;
   }
-  .vc-wire,
-  .vc-upload,
   .vc-playhead,
   .vc-pulse,
   .vc-word,
   .vc-sweep,
   .vc-blip,
-  .vc-showcase-track,
-  .vc-progress,
   .vc-cta-floor,
   .vc-cta-float,
   .vc-cta-glow,
   .vc-cta-rays {
     animation: none;
   }
-  .vc-upload {
-    width: 70%;
+  .vc-playhead {
+    left: 46%;
   }
   .vc-frame {
     animation: none;

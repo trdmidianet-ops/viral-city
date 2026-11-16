@@ -5,12 +5,12 @@ import { Accent, SectionTitle } from "./section-title";
 
 const faqs = [
   {
-    q: "Posso cortar vídeos de outros canais?",
-    a: "Não. A Viral City corta apenas vídeos do seu próprio canal ou materiais que você tem autorização para usar. As tendências servem só de inspiração para ganchos e formatos.",
+    q: "Como a IA escolhe os cortes?",
+    a: "Ela transcreve a fala do vídeo inteiro, procura os ganchos mais fortes e dá uma nota viral para cada trecho, sempre com o motivo da escolha.",
   },
   {
-    q: "Em quais redes posso publicar?",
-    a: "Por enquanto, YouTube Shorts, com vários canais na mesma conta. TikTok e Instagram estão a caminho.",
+    q: "A IA publica sozinha, sem eu ver?",
+    a: "Não. Você revisa e aprova cada corte, e escolhe os dias e horários. Só depois a agenda publica.",
   },
   {
     q: "Preciso saber editar?",
@@ -21,6 +21,14 @@ const faqs = [
     a: "Vídeos longos com bastante fala: podcasts, aulas, lives, entrevistas e vlogs. A IA usa a transcrição para achar os melhores momentos.",
   },
   {
+    q: "Posso cortar vídeos de outros canais?",
+    a: "Não. A Viral City corta apenas vídeos do seu próprio canal ou materiais que você tem autorização para usar. As tendências servem só de inspiração para ganchos e formatos.",
+  },
+  {
+    q: "Em quais redes posso publicar?",
+    a: "Por enquanto, YouTube Shorts, com vários canais na mesma conta. TikTok e Instagram estão a caminho.",
+  },
+  {
     q: "Como funciona o pagamento?",
     a: "Você compra CityCoins no valor que quiser, em real, dólar, euro ou libra. Cada vídeo processado gasta CityCoins de acordo com a duração, e o custo aparece antes de você confirmar.",
   },
@@ -28,25 +36,23 @@ const faqs = [
 
 export function Faq() {
   return (
-    <section id="faq" className="mx-auto max-w-3xl scroll-mt-20 px-4 py-28">
-      <SectionTitle eyebrow="Dúvidas" tone="sun">
-        Perguntas <Accent>frequentes</Accent>
+    <section id="faq" className="mx-auto grid max-w-6xl scroll-mt-16 gap-10 px-4 py-24 sm:py-28 lg:grid-cols-[1fr_1.5fr] lg:gap-16">
+      <SectionTitle index="03" eyebrow="Dúvidas">
+        O que todo mundo pergunta <Accent>antes de testar.</Accent>
       </SectionTitle>
-      <div className="mt-14 space-y-3">
+      <Reveal className="border-t border-line">
         {faqs.map((f, i) => (
-          <Reveal key={f.q} delay={i * 60}>
-            <details className="vc-faq group rounded-xl px-5 py-4">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-medium">
-                {f.q}
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-lg text-pink ring-1 ring-pink/40 transition duration-300 group-open:rotate-45 group-open:bg-pink group-open:text-white">
-                  +
-                </span>
-              </summary>
-              <p className="vc-faq-answer mt-3 text-sm leading-relaxed text-muted">{f.a}</p>
-            </details>
-          </Reveal>
+          <details key={f.q} open={i === 0} className="vc-faq group border-b border-line">
+            <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-6 py-4 text-lg font-medium [&::-webkit-details-marker]:hidden">
+              {f.q}
+              <span aria-hidden="true" className="font-mono text-xl text-cyan transition duration-300 group-open:rotate-45">
+                +
+              </span>
+            </summary>
+            <p className="vc-faq-answer max-w-xl pb-6 leading-relaxed text-muted">{f.a}</p>
+          </details>
         ))}
-      </div>
+      </Reveal>
     </section>
   );
 }
@@ -65,15 +71,14 @@ export function FinalCta() {
         </div>
         <div aria-hidden="true" className="vc-cta-floor" />
         <div className="relative px-6 pb-[17rem] pt-16 text-center sm:pb-[20rem] sm:pt-20">
-          <h2 className="font-heading text-4xl font-medium tracking-[-0.04em] sm:text-6xl">
-            A cidade está <Accent>esperando</Accent>
+          <p className="font-mono text-xs uppercase tracking-[0.18em] text-ink/90">A IA está pronta</p>
+          <h2 className="mx-auto mt-4 max-w-3xl text-balance font-serif text-4xl font-normal leading-none tracking-[-0.01em] sm:text-6xl">
+            Seu próximo vídeo longo já tem 5 Shorts dentro.
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-ink/80">
-            Crie sua conta e transforme seu próximo vídeo longo em uma semana de Shorts.
-          </p>
+          <p className="mx-auto mt-5 max-w-md text-lg text-ink/90">Crie sua conta e deixe a IA encontrar.</p>
           <Link
             href="/login?modo=cadastro"
-            className="btn-sunset mt-8 inline-block rounded-full px-8 py-3.5 font-semibold text-white"
+            className="btn-sunset mt-8 inline-block rounded-full px-8 py-3.5 font-bold text-night"
           >
             Criar conta grátis
           </Link>
@@ -90,7 +95,7 @@ export function Footer() {
         <div>
           <Logo />
           <p className="mt-4 max-w-xs text-sm text-muted">
-            Seus vídeos longos viram Shorts com nota viral, legenda e agenda automática.
+            A IA que transforma vídeos longos em Shorts com nota viral, legenda e agenda automática.
           </p>
         </div>
         <nav className="text-sm">
@@ -98,7 +103,7 @@ export function Footer() {
           <ul className="mt-4 space-y-2.5 text-muted">
             <li><a href="#como-funciona" className="hover:text-ink">Como funciona</a></li>
             <li><a href="#recursos" className="hover:text-ink">Recursos</a></li>
-            <li><a href="#faq" className="hover:text-ink">Perguntas frequentes</a></li>
+            <li><a href="#faq" className="hover:text-ink">Dúvidas</a></li>
             <li><Link href="/login" className="hover:text-ink">Entrar</Link></li>
           </ul>
         </nav>
