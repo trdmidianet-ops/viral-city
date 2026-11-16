@@ -15,7 +15,11 @@ import { spinAction } from "./actions";
 const SLICES = [5, 50, 10, 100, 15, 30, 20, 500];
 const JACKPOT = 500;
 const STEP = 360 / SLICES.length;
-const SPIN_MS = 4600;
+// Giro normal: 9 voltas em 8 s, com a desaceleração longa no fim. Giro calmo: 3 voltas em 5,5 s.
+const SPIN_MS = 8000;
+const TURNS = 9;
+const CALM_MS = 5500;
+const CALM_TURNS = 3;
 
 // Geometria da roda (viewBox 400×400, centro em 200,200). Tudo arredondado para servidor e navegador baterem.
 const C = 200;
@@ -62,12 +66,12 @@ export function Wheel({ spins, minCost }: { spins: number; minCost: number }) {
     const index = Math.max(0, SLICES.indexOf(res.prize));
     const center = index * STEP + STEP / 2;
     const jitter = (Math.random() - 0.5) * (STEP * 0.6);
-    // com "reduzir movimento", a roda dá uma volta curta e o prêmio aparece logo
+    // com "reduzir movimento", a roda gira devagar e por menos voltas (o suspense fica, a vertigem não)
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const ms = reduced ? 600 : SPIN_MS;
+    const ms = reduced ? CALM_MS : SPIN_MS;
     setSpinMs(ms);
-    // sempre para a frente: completa a volta atual, dá 6 voltas e para com a fatia sob o ponteiro
-    setAngle((a) => a - (a % 360) + 360 * (reduced ? 1 : 6) + (360 - center) + jitter);
+    // sempre para a frente: completa a volta atual, dá as voltas e para com a fatia sob o ponteiro
+    setAngle((a) => a - (a % 360) + 360 * (reduced ? CALM_TURNS : TURNS) + (360 - center) + jitter);
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
       setWon({ prize: res.prize, balance: res.balance });
@@ -110,7 +114,7 @@ export function Wheel({ spins, minCost }: { spins: number; minCost: number }) {
         <div
           aria-hidden="true"
           className="absolute inset-[5.5%]"
-          style={{ transform: `rotate(${angle}deg)`, transition: `transform ${spinMs}ms cubic-bezier(0.12, 0.72, 0.08, 1)` }}
+          style={{ transform: `rotate(${angle}deg)`, transition: `transform ${spinMs}ms cubic-bezier(0.1, 0.62, 0.06, 1)` }}
         >
           <svg viewBox="0 0 400 400" className="h-full w-full">
             <defs>
