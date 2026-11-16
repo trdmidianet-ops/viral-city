@@ -71,11 +71,6 @@ export default function Home() {
                 Ver a IA em ação
               </a>
             </div>
-            <ul className="mt-8 flex flex-wrap justify-center gap-x-7 gap-y-2 font-mono text-xs tracking-wide text-ink/80 [text-shadow:0_1px_8px_rgba(11,6,24,0.95)] lg:justify-start">
-              <li>Conexão oficial do Google</li>
-              <li>Só o seu conteúdo</li>
-              <li>Você aprova antes de publicar</li>
-            </ul>
           </HeroReveal>
           <HeroReveal delay={350}>
             <AiPanel />
