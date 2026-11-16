@@ -56,9 +56,9 @@ export default function Home() {
               A IA que encontra os <span className="text-sunset pr-1 italic">virais escondidos</span> no seu vídeo longo.
             </h1>
             <p className="mx-auto mt-6 max-w-xl text-base text-ink [text-shadow:0_2px_12px_rgba(11,6,24,0.95)] sm:text-lg lg:mx-0">
-              Ela ouve cada minuto, entende o que prende a atenção e entrega 5 Shorts com nota
-              viral, legenda e enquadramento 9:16. Você só aprova. Ela publica no seu canal na
-              hora certa.
+              Ela ouve cada minuto, entende o que prende a atenção e entrega 5 cortes com nota
+              viral, legenda e enquadramento 9:16. Você só aprova. Ela publica no YouTube,
+              Instagram e TikTok na hora certa.
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center lg:justify-start">
               <Link

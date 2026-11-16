@@ -26,7 +26,7 @@ const faqs = [
   },
   {
     q: "Em quais redes posso publicar?",
-    a: "Por enquanto, YouTube Shorts, com vários canais na mesma conta. TikTok e Instagram estão a caminho.",
+    a: "YouTube Shorts, Instagram Reels e TikTok, com vários perfis na mesma conta.",
   },
   {
     q: "Como funciona o pagamento?",
@@ -73,7 +73,7 @@ export function FinalCta() {
         <div className="relative px-6 pb-[17rem] pt-16 text-center sm:pb-[20rem] sm:pt-20">
           <p className="font-mono text-xs uppercase tracking-[0.18em] text-ink/90">A IA está pronta</p>
           <h2 className="mx-auto mt-4 max-w-3xl text-balance font-serif text-4xl font-normal leading-none tracking-[-0.01em] sm:text-6xl">
-            Seu próximo vídeo longo já tem 5 Shorts dentro.
+            Seu próximo vídeo longo já tem 5 cortes virais dentro.
           </h2>
           <p className="mx-auto mt-5 max-w-md text-lg text-ink/90">Crie sua conta e deixe a IA encontrar.</p>
           <Link
@@ -95,7 +95,8 @@ export function Footer() {
         <div>
           <Logo />
           <p className="mt-4 max-w-xs text-sm text-muted">
-            A IA que transforma vídeos longos em Shorts com nota viral, legenda e agenda automática.
+            A IA que transforma vídeos longos em cortes para Shorts, Reels e TikTok, com nota viral, legenda e agenda
+            automática.
           </p>
         </div>
         <nav className="text-sm">

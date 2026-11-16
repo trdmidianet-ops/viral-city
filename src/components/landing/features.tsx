@@ -48,7 +48,7 @@ export function Features() {
         <SectionTitle
           index="02"
           eyebrow="Recursos"
-          lead="Ela não escreve e-mail nem gera imagem. Faz um trabalho: tirar Shorts fortes de vídeos longos e colocá-los no ar."
+          lead="Ela não escreve e-mail nem gera imagem. Faz um trabalho: tirar cortes fortes de vídeos longos e colocá-los no ar."
         >
           Uma IA treinada para <Accent>uma coisa só.</Accent>
         </SectionTitle>
@@ -93,8 +93,8 @@ export function Features() {
           <div className="min-w-[240px] flex-1">
             <h3 className="font-semibold">Seu conteúdo, conexão oficial</h3>
             <p className="mt-1 text-sm leading-relaxed text-muted">
-              A IA só corta vídeos seus ou com autorização. O acesso ao YouTube é pelo login oficial do Google, e
-              nenhuma senha fica guardada.
+              A IA só corta vídeos seus ou com autorização. A conexão com YouTube, Instagram e TikTok é a oficial de
+              cada rede, e nenhuma senha fica guardada.
             </p>
           </div>
         </Reveal>
