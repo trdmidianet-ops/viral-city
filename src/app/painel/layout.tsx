@@ -9,8 +9,10 @@ import { currentUser } from "@/lib/auth";
 import { isAdminUser } from "@/lib/admin";
 import { isAuthConfigured } from "@/lib/auth-config";
 import { gatePassword } from "@/lib/gate";
+import { availableSpins } from "@/lib/roulette/store";
 import { PainelNav } from "./nav";
 import { ReferralClaim } from "./referral-claim";
+import { SpinBanner } from "./spin-banner";
 
 export default async function PainelLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
@@ -18,6 +20,8 @@ export default async function PainelLayout({ children }: { children: React.React
   const gated = !authOn && Boolean(gatePassword());
   const balance = authOn && user && isDbConfigured() ? await getBalance(user.id).catch(() => null) : null;
   const admin = authOn && isDbConfigured() ? await isAdminUser(user?.id) : false;
+  // a roleta é um extra: se a tabela ainda não existe ou a consulta falha, o painel segue sem o aviso
+  const spins = authOn && user && isDbConfigured() ? await availableSpins(user.id).then((s) => s.count, () => 0) : 0;
 
   return (
     <div className="min-h-screen md:flex">
@@ -56,6 +60,7 @@ export default async function PainelLayout({ children }: { children: React.React
         )}
         <main className="mx-auto max-w-6xl p-4 sm:p-8">
           {authOn && user && isDbConfigured() && <ReferralClaim />}
+          <SpinBanner count={spins} />
           {children}
         </main>
       </div>

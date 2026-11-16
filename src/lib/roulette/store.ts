@@ -1,5 +1,5 @@
 import { randomInt } from "node:crypto";
-import { queryOne } from "@/lib/db";
+import { query, queryOne } from "@/lib/db";
 import {
   JACKPOT_COINS,
   JACKPOT_COOLDOWN_DAYS,
@@ -43,6 +43,16 @@ export async function availableSpins(userId: string): Promise<{ count: number; n
     [userId],
   );
   return { count: row?.count ?? 0, nextExpiry: row?.next_expiry ?? null };
+}
+
+export type PastSpin = { prize: number; used_at: string };
+
+/** Últimos prêmios da conta, do mais recente para o mais antigo. */
+export async function recentPrizes(userId: string, limit = 5): Promise<PastSpin[]> {
+  return query<PastSpin>(
+    "select prize, used_at from vc_roulette_spins where user_id = $1 and used_at is not null order by used_at desc limit $2",
+    [userId, limit],
+  );
 }
 
 export type SpinResult = { prize: number; balance: number };

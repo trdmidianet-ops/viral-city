@@ -9,6 +9,7 @@ import { setDefaultResultOrder } from "node:dns";
 setDefaultResultOrder("ipv4first");
 
 import express from "express";
+import { sendSpinEmail } from "@/lib/roulette/email";
 import { grantInactivitySpins } from "@/lib/roulette/grants";
 import { enqueue, pollQueued } from "./process.js";
 
@@ -16,7 +17,13 @@ import { enqueue, pollQueued } from "./process.js";
 async function rouletteInactivity() {
   try {
     const granted = await grantInactivitySpins();
-    if (granted.length) console.log(`[roleta] ${granted.length} giro(s) de inatividade concedido(s)`);
+    if (!granted.length) return;
+    let sent = 0;
+    for (const g of granted) {
+      // o giro já está concedido: uma falha de e-mail não desfaz nada
+      if (await sendSpinEmail(g.email, g.name).catch(() => false)) sent++;
+    }
+    console.log(`[roleta] ${granted.length} giro(s) de inatividade concedido(s), ${sent} e-mail(s) enviado(s)`);
   } catch (err) {
     console.warn("[roleta] rotina de inatividade falhou:", err instanceof Error ? err.message : err);
   }
