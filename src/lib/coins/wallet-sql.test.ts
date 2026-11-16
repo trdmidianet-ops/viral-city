@@ -3,6 +3,7 @@ import path from "node:path";
 import { PGlite } from "@electric-sql/pglite";
 import { beforeAll, describe, expect, it } from "vitest";
 import { ADMIN_CHECK_SQL, adminFromRow, type AdminCheckRow } from "@/lib/admin-rules";
+import { INACTIVE_CANDIDATES_SQL } from "@/lib/roulette/grants";
 
 /**
  * Testa as migrações e as funções de dinheiro (CityCoins) num Postgres de verdade,
@@ -185,5 +186,112 @@ describe("Indique e Ganhe no banco", () => {
     await newUser("amigo3");
     expect(await apply("amigo3", "TORRES10", 1)).toBe("ok");
     expect(await bal("amigo3")).toBe(0);
+  });
+});
+
+describe("Roleta no banco", () => {
+  const R = "roleta_1";
+  // ttl 7 dias, até 3 guardados, até 4 por mês
+  const grant = async (user: string, reason: string, key: string) =>
+    (await one<{ r: string }>("select vc_grant_spin($1, $2, $3, 7, 3, 4) as r", [user, reason, key])).r;
+  // prêmio máximo 500, carência de 90 dias, substituto 100
+  const spin = async (user: string, prize: number) =>
+    (await db.query<{ won_prize: number; new_balance: string }>("select won_prize, new_balance from vc_spin_roulette($1, $2, 500, 90, 100)", [user, prize])).rows[0];
+  const bal = async (user: string) => Number((await one<{ balance: string }>("select balance from vc_wallets where user_id = $1", [user]))?.balance ?? 0);
+  async function newUser(id: string, verified: boolean) {
+    await db.query(`insert into "user" ("id", "name", "email", "emailVerified", "updatedAt") values ($1, 'x', $2, $3, now())`, [
+      id,
+      `${id}@exemplo.com`,
+      verified,
+    ]);
+  }
+  async function pay(user: string, session: string) {
+    await db.query(
+      "insert into vc_purchases (user_id, stripe_session_id, currency, amount_minor, usd_cents, coins, usd_rate, status) values ($1, $2, 'usd', 100, 100, 100, 1, 'paid')",
+      [user, session],
+    );
+  }
+
+  beforeAll(async () => {
+    await newUser(R, true);
+    await pay(R, "cs_roleta_1");
+  });
+
+  it("só concede giro a conta verificada que já pagou ou processou um vídeo", async () => {
+    await newUser("roleta_sem_email", false);
+    await pay("roleta_sem_email", "cs_roleta_2");
+    expect(await grant("roleta_sem_email", "cuts", "cuts:5")).toBe("inelegivel");
+    await newUser("roleta_sem_uso", true);
+    expect(await grant("roleta_sem_uso", "inactive_7", "inactive_7:a")).toBe("inelegivel");
+    expect(await spin("roleta_sem_uso", 20)).toBeUndefined();
+  });
+
+  it("o mesmo motivo não concede dois giros e a conta guarda no máximo 3", async () => {
+    expect(await grant(R, "cuts", "cuts:5")).toBe("ok");
+    expect(await grant(R, "cuts", "cuts:5")).toBe("ja_concedido");
+    expect(await grant(R, "cuts", "cuts:10")).toBe("ok");
+    expect(await grant(R, "inactive_7", "inactive_7:a")).toBe("ok");
+    expect(await grant(R, "cuts", "cuts:15")).toBe("limite_guardados");
+  });
+
+  it("girar usa um giro e credita o prêmio como bônus", async () => {
+    const before = await bal(R);
+    const res = await spin(R, 30);
+    expect(res.won_prize).toBe(30);
+    expect(Number(res.new_balance)).toBe(before + 30);
+    const last = await one<{ kind: string; amount: string }>("select kind, amount from vc_coin_ledger where user_id = $1 order by id desc limit 1", [R]);
+    expect([last.kind, Number(last.amount)]).toEqual(["bonus", 30]);
+  });
+
+  it("o prêmio máximo só sai uma vez dentro da carência; depois paga o substituto", async () => {
+    expect((await spin(R, 500)).won_prize).toBe(500);
+    expect((await spin(R, 500)).won_prize).toBe(100);
+  });
+
+  it("sem giro disponível, nada é pago", async () => {
+    const before = await bal(R);
+    expect(await spin(R, 50)).toBeUndefined();
+    expect(await bal(R)).toBe(before);
+  });
+
+  it("depois de 4 giros em 30 dias, só no mês seguinte", async () => {
+    expect(await grant(R, "cuts", "cuts:15")).toBe("ok");
+    expect(await grant(R, "cuts", "cuts:20")).toBe("limite_mensal");
+    // o suporte pode conceder mesmo assim
+    expect(await grant(R, "admin", "admin:1")).toBe("ok");
+  });
+
+  it("giro vencido não pode ser usado", async () => {
+    await db.query("update vc_roulette_spins set expires_at = now() - interval '1 minute' where user_id = $1 and used_at is null", [R]);
+    expect(await spin(R, 20)).toBeUndefined();
+  });
+
+  it("a rotina de inatividade acha quem parou há 7 e há 21 dias, e ninguém fora da janela", async () => {
+    // [usuário, dias desde o último vídeo, e-mail verificado]
+    const cases: [string, number, boolean][] = [
+      ["parado_3", 3, true],
+      ["parado_10", 10, true],
+      ["parado_25", 25, true],
+      ["parado_60", 60, true],
+      ["parado_10_sem_email", 10, false],
+    ];
+    for (const [id, days, verified] of cases) {
+      await newUser(id, verified);
+      await db.query("insert into vc_sources (user_id, kind, title, created_at) values ($1, 'file', 'x', now() - make_interval(days => $2::int))", [id, days]);
+    }
+    const candidates = async () =>
+      (await db.query<{ user_id: string; reason: string; grant_key: string }>(INACTIVE_CANDIDATES_SQL, [7, 21, 45, 200])).rows.filter((r) =>
+        r.user_id.startsWith("parado_"),
+      );
+    const found = await candidates();
+    expect(found.map((r) => [r.user_id, r.reason]).sort()).toEqual([
+      ["parado_10", "inactive_7"],
+      ["parado_25", "inactive_21"],
+    ]);
+    // depois de receber o giro daquela chave, a conta sai da lista
+    const first = found.find((r) => r.user_id === "parado_10")!;
+    await pay("parado_10", "cs_roleta_parado");
+    expect(await grant("parado_10", first.reason, first.grant_key)).toBe("ok");
+    expect((await candidates()).map((r) => r.user_id)).toEqual(["parado_25"]);
   });
 });

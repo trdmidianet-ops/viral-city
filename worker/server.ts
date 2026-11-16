@@ -9,7 +9,18 @@ import { setDefaultResultOrder } from "node:dns";
 setDefaultResultOrder("ipv4first");
 
 import express from "express";
+import { grantInactivitySpins } from "@/lib/roulette/grants";
 import { enqueue, pollQueued } from "./process.js";
+
+/** Roleta: de hora em hora, concede o giro de inatividade a quem está parado. Nunca derruba o worker. */
+async function rouletteInactivity() {
+  try {
+    const granted = await grantInactivitySpins();
+    if (granted.length) console.log(`[roleta] ${granted.length} giro(s) de inatividade concedido(s)`);
+  } catch (err) {
+    console.warn("[roleta] rotina de inatividade falhou:", err instanceof Error ? err.message : err);
+  }
+}
 
 const PORT = Number(process.env.PORT ?? 3001);
 const WORKER_SECRET = process.env.WORKER_SECRET ?? "";
@@ -57,4 +68,7 @@ app.listen(PORT, () => {
   setInterval(pollQueued, 30_000);
   // Roda uma vez já no boot para pegar sources que ficaram perdidas
   pollQueued().catch(console.error);
+
+  setInterval(rouletteInactivity, 60 * 60 * 1000);
+  setTimeout(rouletteInactivity, 60_000);
 });

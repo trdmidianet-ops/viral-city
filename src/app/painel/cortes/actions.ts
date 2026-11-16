@@ -13,6 +13,7 @@ import { parseClipEdit } from "@/lib/clips/edit";
 import { isDbConfigured } from "@/lib/db";
 import { listChannelUploads } from "@/lib/youtube/channel";
 import { niches } from "@/lib/youtube/niches";
+import { grantSpinForApprovals } from "@/lib/roulette/grants";
 import { createReadyVideo } from "@/lib/videos/repo";
 
 export type FormState = { error?: string };
@@ -169,6 +170,7 @@ export async function approveClipAction(form: FormData) {
     duration: Number(clip.end_seconds) - Number(clip.start_seconds),
   });
   await updateClip(id, { status: "approved", video_id: video.id });
+  await grantSpinForApprovals(userId);
   revalidatePath(`/painel/cortes/${source.id}`);
 }
 

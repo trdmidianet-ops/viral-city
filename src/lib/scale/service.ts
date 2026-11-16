@@ -4,6 +4,7 @@ import { MAX_VARIATIONS, costForVariations, formatCoins } from "@/lib/coins/pric
 import { getBalance } from "@/lib/coins/wallet";
 import { getOwnedClip } from "@/lib/clips/repo";
 import { canUseLocalFiles, uploadPath } from "@/lib/clips/local-files";
+import { grantSpinForApprovals } from "@/lib/roulette/grants";
 import { createReadyVideo } from "@/lib/videos/repo";
 import { cleanHeadlines } from "./headlines";
 import { createScaleJob, getOwnedScaleJob, getOwnedVariation, listVariations, updateVariation, type ScaleJob } from "./repo";
@@ -99,6 +100,7 @@ export async function approveVariation(userId: string, variationId: string): Pro
     duration: Number(variation.duration_seconds ?? 0),
   });
   await updateVariation(variation.id, { status: "approved", video_id: video.id });
+  await grantSpinForApprovals(userId);
   return job.id;
 }
 
