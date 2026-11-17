@@ -9,9 +9,9 @@ import { AuthForm } from "./auth-form";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ modo?: string; next?: string; cupom?: string; ref?: string }>;
+  searchParams: Promise<{ modo?: string; next?: string; cupom?: string; ref?: string; error?: string }>;
 }) {
-  const { modo, next: nextParam, cupom, ref } = await searchParams;
+  const { modo, next: nextParam, cupom, ref, error } = await searchParams;
   const next = safeNext(nextParam);
   const coupon = (cupom ?? ref ?? (await cookies()).get("vc_ref")?.value ?? "").replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 20);
   // quem chega com cupom já cai no cadastro
@@ -28,6 +28,14 @@ export default async function LoginPage({
         <h1 className="mt-6 text-center text-xl font-semibold">
           {mode === "signup" ? "Crie sua conta" : "Bem-vindo de volta"}
         </h1>
+
+        {error && (
+          <p role="alert" className="mt-4 rounded-lg border border-pink/40 bg-pink/10 px-3 py-2.5 text-center text-sm text-ink">
+            {error === "account_not_linked"
+              ? "Esse e-mail já tem conta com senha. Entre com e-mail e senha."
+              : "Não foi possível entrar com o Google desta vez. Tente de novo."}
+          </p>
+        )}
 
         {isAuthConfigured() ? (
           <AuthForm mode={mode} next={next} google={isGoogleLoginConfigured()} coupon={coupon} />

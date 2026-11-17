@@ -252,5 +252,11 @@ export function appUrl(): string {
 }
 
 export function redirectUri(p: Provider): string {
+  // YouTube: em produção, o retorno é o endereço cadastrado no Google Cloud (o antigo, da Vercel);
+  // o next.config.ts encaminha de lá para o domínio oficial. Assim não depende do APP_URL.
+  if (p.platform === "youtube") {
+    if (process.env.YOUTUBE_REDIRECT_URI) return process.env.YOUTUBE_REDIRECT_URI;
+    if (process.env.VERCEL_ENV === "production") return "https://viral-city.vercel.app/api/oauth/youtube/callback";
+  }
   return `${appUrl()}/api/oauth/${p.platform}/callback`;
 }
