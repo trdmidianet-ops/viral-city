@@ -166,7 +166,11 @@ export const TOOLS: Tool[] = [
       const name = (id: string | null) => accounts.find((a) => a.id === id)?.name ?? "qualquer conta";
       const days = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
       return {
-        horarios: slots.map((s) => ({ conta: name(s.account_id), dia: days[s.weekday], hora: s.post_time.slice(0, 5) })),
+        horarios: slots.map((s) => ({
+          conta: s.account_id ? name(s.account_id) : "lembrete por e-mail",
+          dia: days[s.weekday],
+          hora: s.post_time.slice(0, 5),
+        })),
         fila: videos.filter((v) => v.status === "ready").map((v) => ({ titulo: v.title, conta: name(v.account_id) })),
         publicados_recentes: videos
           .filter((v) => v.status === "published")

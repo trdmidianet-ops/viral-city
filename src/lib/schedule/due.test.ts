@@ -6,6 +6,7 @@ const now = new Date("2026-10-16T21:10:00Z");
 const slot = (patch: Partial<Slot> = {}): Slot => ({
   id: "s",
   account_id: "a",
+  user_id: "u",
   weekday: 5,
   post_time: "18:00:00",
   timezone: "America/Sao_Paulo",

@@ -189,6 +189,38 @@ describe("Indique e Ganhe no banco", () => {
   });
 });
 
+describe("Lembretes da agenda no banco", () => {
+  const U = "agenda_1";
+  // mesmo SQL de lib/schedule/repo.ts
+  const addReminder = (weekday: number, time: string) =>
+    db.query(
+      `insert into vc_posting_slots (user_id, account_id, weekday, post_time, timezone) values ($1, null, $2, $3, 'America/Sao_Paulo')
+       on conflict (user_id, weekday, post_time) where account_id is null do nothing`,
+      [U, weekday, time],
+    );
+  const claim = async (id: string, date: string) =>
+    (await db.query("update vc_posting_slots set last_run_on = $2 where id = $1 and last_run_on is distinct from $2::date returning id", [id, date])).rows.length === 1;
+
+  beforeAll(async () => {
+    await db.query(`insert into "user" ("id", "name", "email", "updatedAt") values ($1, 'x', 'agenda@exemplo.com', now())`, [U]);
+  });
+
+  it("cria lembrete sem conta e ignora o horário repetido", async () => {
+    await addReminder(5, "18:00");
+    await addReminder(5, "18:00");
+    await addReminder(1, "12:00");
+    const rows = (await db.query<{ weekday: number }>("select weekday from vc_posting_slots where user_id = $1 and account_id is null", [U])).rows;
+    expect(rows.map((r) => r.weekday).sort()).toEqual([1, 5]);
+  });
+
+  it("cada lembrete roda uma vez por dia, mesmo com duas chamadas ao mesmo tempo", async () => {
+    const id = (await one<{ id: string }>("select id from vc_posting_slots where user_id = $1 and weekday = 5", [U])).id;
+    expect(await claim(id, "2026-11-20")).toBe(true);
+    expect(await claim(id, "2026-11-20")).toBe(false);
+    expect(await claim(id, "2026-11-27")).toBe(true);
+  });
+});
+
 describe("Roleta no banco", () => {
   const R = "roleta_1";
   // ttl 7 dias, até 3 guardados, até 4 por mês

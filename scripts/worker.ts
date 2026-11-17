@@ -293,6 +293,8 @@ async function publishDue() {
   const now = new Date();
   for (const slot of await listSlots()) {
     if (!isSlotDue(slot, now)) continue;
+    // horário sem conta é lembrete: quem cuida é o worker do Railway
+    if (!slot.account_id) continue;
     // Marca antes de postar: se algo falhar, não tenta duas vezes no mesmo horário
     await markSlotRun(slot, now);
 

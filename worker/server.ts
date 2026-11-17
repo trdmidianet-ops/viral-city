@@ -11,6 +11,22 @@ setDefaultResultOrder("ipv4first");
 import express from "express";
 import { sendSpinEmail } from "@/lib/roulette/email";
 import { grantInactivitySpins } from "@/lib/roulette/grants";
+import { runDueReminders } from "@/lib/schedule/reminders";
+
+/** Agenda: a cada minuto, manda o lembrete de quem chegou no horário marcado. Nunca derruba o worker. */
+let remindersBusy = false;
+async function agendaReminders() {
+  if (remindersBusy) return;
+  remindersBusy = true;
+  try {
+    const sent = await runDueReminders();
+    if (sent) console.log(`[agenda] ${sent} lembrete(s) de postagem enviado(s)`);
+  } catch (err) {
+    console.warn("[agenda] rotina de lembretes falhou:", err instanceof Error ? err.message : err);
+  } finally {
+    remindersBusy = false;
+  }
+}
 import { serveFile } from "./files.js";
 import { enqueue, pollQueued } from "./process.js";
 
@@ -88,6 +104,7 @@ app.listen(PORT, () => {
   // Roda uma vez já no boot para pegar sources que ficaram perdidas
   pollQueued().catch(console.error);
 
+  setInterval(agendaReminders, 60_000);
   setInterval(rouletteInactivity, 60 * 60 * 1000);
   setTimeout(rouletteInactivity, 60_000);
 });

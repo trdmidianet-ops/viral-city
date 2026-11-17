@@ -1,7 +1,9 @@
 /** Lógica pura da agenda (sem banco), para ser testável. */
 export type Slot = {
   id: string;
-  account_id: string;
+  /** null = lembrete do usuário (sem conta conectada). */
+  account_id: string | null;
+  user_id: string;
   weekday: number; // 0 = domingo
   post_time: string; // "HH:MM" ou "HH:MM:SS"
   timezone: string;
