@@ -25,7 +25,16 @@ function create() {
       },
     },
     socialProviders: isGoogleLoginConfigured()
-      ? { google: { clientId: process.env.GOOGLE_CLIENT_ID!, clientSecret: process.env.GOOGLE_CLIENT_SECRET! } }
+      ? {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            // O login pede só nome, e-mail e foto. Sem isto, o Google soma as permissões do YouTube
+            // que a pessoa já deu ao conectar um canal, e o login passa a mostrar a tela
+            // "O Google não verificou este app" a cada entrada.
+            includeGrantedScopes: false,
+          },
+        }
       : {},
     // grava os cookies de sessão quando o login acontece numa server action
     plugins: [nextCookies()],

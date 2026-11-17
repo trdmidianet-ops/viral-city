@@ -78,6 +78,15 @@ export default async function ContasPage({
                 )}
               </header>
 
+              {id === "youtube" && configured && canStore && (
+                <p className="mt-4 rounded-lg border border-line bg-night/40 px-3 py-2.5 text-xs leading-relaxed text-muted">
+                  Ao conectar, o Google pode mostrar “O Google não verificou este app” enquanto a verificação da Viral City
+                  está em análise. É seguro continuar: toque em <strong className="text-ink">Avançado</strong> e depois em{" "}
+                  <strong className="text-ink">Acessar Viral City</strong>. A conexão usa o login oficial do Google e nenhuma
+                  senha é guardada.
+                </p>
+              )}
+
               {list.length > 0 && (
                 <ul className="mt-5 divide-y divide-line">
                   {list.map((a) => (
