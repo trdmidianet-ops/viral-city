@@ -6,6 +6,7 @@ import { requireUserId } from "@/lib/auth";
 import { isDbConfigured } from "@/lib/db";
 import { isValidTime } from "@/lib/schedule/due";
 import { addReminderSlot, addSlot, removeSlot } from "@/lib/schedule/repo";
+import { isLinkedOnly } from "@/lib/youtube/channel-link";
 
 const UUID = /^[0-9a-f-]{36}$/i;
 
@@ -20,7 +21,9 @@ export async function addSlotAction(form: FormData) {
   if (accountId === "lembrete") {
     for (const d of new Set(days)) await addReminderSlot(userId, d, time);
   } else {
-    if (!UUID.test(accountId) || !(await getOwnedAccount(userId, accountId))) return;
+    const account = UUID.test(accountId) ? await getOwnedAccount(userId, accountId) : null;
+    // canal ligado pelo link não posta pela API
+    if (!account || isLinkedOnly(account.scopes)) return;
     for (const d of new Set(days)) await addSlot(userId, accountId, d, time);
   }
   revalidatePath("/painel/agenda");

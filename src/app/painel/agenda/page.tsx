@@ -7,6 +7,7 @@ import { isDbConfigured } from "@/lib/db";
 import { weekdays, type Slot } from "@/lib/schedule/due";
 import { listSlotsFor } from "@/lib/schedule/repo";
 import { requireUserId } from "@/lib/auth";
+import { isLinkedOnly } from "@/lib/youtube/channel-link";
 import { addSlotAction, removeSlotAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -82,6 +83,8 @@ export default async function AgendaPage() {
   const userId = await requireUserId();
   const [accounts, slots] = await Promise.all([listAccounts(userId), listSlotsFor(userId)]);
   const reminders = slots.filter((s) => s.account_id === null);
+  // canal ligado pelo link não tem permissão para postar pela API: fica fora da postagem automática
+  const postingAccounts = accounts.filter((a) => !isLinkedOnly(a.scopes));
 
   return (
     <>
@@ -102,7 +105,7 @@ export default async function AgendaPage() {
         <WeekSlots target="lembrete" slots={reminders} />
       </section>
 
-      {accounts.length > 0 && (
+      {postingAccounts.length > 0 && (
         <div className="mt-8 space-y-6">
           <div>
             <h2 className="font-semibold">Postagem automática pelas contas conectadas</h2>
@@ -111,7 +114,7 @@ export default async function AgendaPage() {
               aprovado pelas redes, os vídeos enviados pela API saem privados.
             </p>
           </div>
-          {accounts.map((account) => {
+          {postingAccounts.map((account) => {
             const p = platforms.find((x) => x.id === account.platform)!;
             return (
               <section key={account.id} className="glass rounded-2xl p-5 sm:p-6">

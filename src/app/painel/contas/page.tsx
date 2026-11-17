@@ -5,7 +5,9 @@ import { canStoreAccounts, getAccountLogo, listAccounts, type Account } from "@/
 import { requireUserId } from "@/lib/auth";
 import { isDbConfigured } from "@/lib/db";
 import { appUrl, isConfigured, providers, redirectUri } from "@/lib/oauth/providers";
+import { isLinkedOnly } from "@/lib/youtube/channel-link";
 import { disconnectAccount, saveLogoAction } from "./actions";
+import { ChannelLinkForm } from "./channel-link-form";
 import { setupGuides } from "./setup-guides";
 
 export const dynamic = "force-dynamic";
@@ -78,6 +80,8 @@ export default async function ContasPage({
                 )}
               </header>
 
+              {id === "youtube" && canStore && isDbConfigured() && <ChannelLinkForm />}
+
               {id === "youtube" && configured && canStore && (
                 <p className="mt-4 rounded-lg border border-line bg-night/40 px-3 py-2.5 text-xs leading-relaxed text-muted">
                   Ao conectar, o Google pode mostrar “O Google não verificou este app” enquanto a verificação da Viral City
@@ -132,8 +136,9 @@ function AccountRow({ account, logo, canLogo }: { account: Account; logo: string
         <p className="truncate text-sm font-medium">{account.name}</p>
         <p className="truncate text-xs text-muted">
           {account.handle ? `${account.handle} · ` : ""}
-          conectada em {new Date(account.connectedAt).toLocaleDateString("pt-BR")}
-          {expired && " · token será renovado ao postar"}
+          {isLinkedOnly(account.scopes) ? "verificado pelo link" : "conectada"} em{" "}
+          {new Date(account.connectedAt).toLocaleDateString("pt-BR")}
+          {expired && !isLinkedOnly(account.scopes) && " · token será renovado ao postar"}
         </p>
       </div>
       {canLogo && (
