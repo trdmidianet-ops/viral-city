@@ -11,6 +11,7 @@ setDefaultResultOrder("ipv4first");
 import express from "express";
 import { sendSpinEmail } from "@/lib/roulette/email";
 import { grantInactivitySpins } from "@/lib/roulette/grants";
+import { serveFile } from "./files.js";
 import { enqueue, pollQueued } from "./process.js";
 
 /** Roleta: de hora em hora, concede o giro de inatividade a quem está parado. Nunca derruba o worker. */
@@ -42,6 +43,17 @@ app.use(express.json());
 // Health check (Railway usa isso para saber se o serviço está de pé)
 app.get("/health", (_req, res) => {
   res.json({ ok: true, ts: Date.now() });
+});
+
+/**
+ * GET /files/:kind/:id?exp=&sig=[&dl=1]
+ * Vídeo pronto (corte, versão do Scale ou vídeo longo) por link assinado pelo site.
+ */
+app.get("/files/:kind/:id", (req, res) => {
+  serveFile(req, res).catch((err) => {
+    console.error("[files]", err);
+    if (!res.headersSent) res.status(500).send("Erro ao entregar o vídeo.");
+  });
 });
 
 /**

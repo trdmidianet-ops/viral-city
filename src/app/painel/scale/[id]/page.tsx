@@ -4,7 +4,7 @@ import { ArrowLeft, Check, CheckCheck, RotateCcw, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/painel-ui";
 import { getAccount } from "@/lib/accounts/store";
 import { requireUserId } from "@/lib/auth";
-import { canUseLocalFiles } from "@/lib/clips/local-files";
+import { canShowVideos } from "@/lib/files/respond";
 import { isDbConfigured } from "@/lib/db";
 import { getOwnedScaleJob, listVariations, type Variation } from "@/lib/scale/repo";
 import { TEMPLATES, templateName } from "@/lib/scale/templates";
@@ -25,7 +25,7 @@ export default async function ScaleJobPage({ params }: { params: Promise<{ id: s
 
   const working = !["ready", "failed"].includes(job.status) || variations.some((v) => v.status === "pending" || v.status === "rendering");
   const st = scaleStatus[job.status];
-  const local = canUseLocalFiles();
+  const local = canShowVideos();
   const readyCount = variations.filter((v) => v.status === "rendered").length;
 
   return (

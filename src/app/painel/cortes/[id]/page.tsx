@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Check, Layers, RotateCcw, SlidersHorizontal, Sparkles, Star, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/painel-ui";
 import { getAccount } from "@/lib/accounts/store";
-import { canUseLocalFiles } from "@/lib/clips/local-files";
+import { canShowVideos } from "@/lib/files/respond";
 import { getOwnedSource, listClips, type Clip } from "@/lib/clips/repo";
 import { requireUserId } from "@/lib/auth";
 import { isDbConfigured } from "@/lib/db";
@@ -84,7 +84,7 @@ export default async function SourcePage({ params }: { params: Promise<{ id: str
   const working =
     !["ready", "failed"].includes(source.status) || clips.some((c) => c.status === "pending" || c.status === "rendering");
   const st = sourceStatus[source.status];
-  const local = canUseLocalFiles();
+  const local = canShowVideos();
 
   return (
     <>

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Layers } from "lucide-react";
 import { PageHeader } from "@/components/painel-ui";
 import { requireUserId } from "@/lib/auth";
-import { canUseLocalFiles } from "@/lib/clips/local-files";
+import { canShowVideos } from "@/lib/files/respond";
 import { getClip, getOwnedSourceWithTranscript } from "@/lib/clips/repo";
 import { isDbConfigured } from "@/lib/db";
 import { AutoRefresh } from "../../cortes/[id]/auto-refresh";
@@ -26,7 +26,7 @@ export default async function EditorPage({ params }: { params: Promise<{ id: str
   const start = Number(clip.start_seconds);
   const end = Number(clip.end_seconds);
   const words = (source.transcript ?? []).filter((w) => w.end >= start - WINDOW && w.start <= end + WINDOW);
-  const local = canUseLocalFiles();
+  const local = canShowVideos();
   const st = clipStatus[clip.status];
   const working = clip.status === "pending" || clip.status === "rendering";
 

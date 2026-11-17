@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarClock, Crown, FerrisWheel, Gift, LayoutDashboard, LayoutTemplate, Layers, Settings, TrendingUp, Users, Wallet } from "lucide-react";
+import { CalendarClock, Crown, FerrisWheel, Gift, LayoutDashboard, LayoutTemplate, Layers, Send, Settings, TrendingUp, Users, Wallet } from "lucide-react";
 
 export const navItems = [
   { href: "/painel", label: "Visão geral", icon: LayoutDashboard },
@@ -10,6 +10,7 @@ export const navItems = [
   { href: "/painel/contas", label: "Contas", icon: Users },
   { href: "/painel/scale", label: "Scale", icon: Layers },
   { href: "/painel/templates", label: "Templates", icon: LayoutTemplate },
+  { href: "/painel/postar", label: "Postar", icon: Send },
   { href: "/painel/agenda", label: "Agenda", icon: CalendarClock },
   { href: "/painel/carteira", label: "Carteira", icon: Wallet },
   { href: "/painel/roleta", label: "Roleta", icon: FerrisWheel },

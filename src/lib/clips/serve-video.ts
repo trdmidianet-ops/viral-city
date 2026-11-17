@@ -4,13 +4,14 @@ import { Readable } from "node:stream";
 import { isInsideData } from "./local-files";
 
 /** Envia um MP4 de dentro de .data com suporte a "Range" (avançar/voltar no player). */
-export async function serveLocalVideo(req: Request, file: string | null): Promise<Response> {
+export async function serveLocalVideo(req: Request, file: string | null, { download = false }: { download?: boolean } = {}): Promise<Response> {
   if (!file || !isInsideData(file)) return new Response("Vídeo não encontrado.", { status: 404 });
   const { size } = await stat(file).catch(() => ({ size: 0 }));
   if (!size) return new Response("Arquivo não encontrado.", { status: 404 });
 
   const range = /bytes=(\d*)-(\d*)/.exec(req.headers.get("range") ?? "");
   const headers: Record<string, string> = { "Content-Type": "video/mp4", "Accept-Ranges": "bytes", "Cache-Control": "no-store" };
+  if (download) headers["Content-Disposition"] = 'attachment; filename="viral-city-corte.mp4"';
 
   if (range) {
     const start = range[1] ? Number(range[1]) : 0;

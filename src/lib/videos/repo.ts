@@ -72,6 +72,37 @@ export async function claimForPublishing(id: string, accountId: string): Promise
 export const markPublished = (id: string, externalId: string) =>
   update(id, { status: "published", external_post_id: externalId, published_at: new Date().toISOString() });
 
+/** Vídeos prontos para o dono postar (com um toque), do mais antigo para o mais novo. */
+export async function listReadyToPost(userId: string, limit = 30): Promise<Video[]> {
+  return query<Video>(
+    "select * from vc_videos where user_id = $1 and status = 'ready' and local_path is not null order by created_at limit $2",
+    [userId, limit],
+  );
+}
+
+/** Últimos vídeos que o dono marcou como postados. */
+export async function listRecentlyPosted(userId: string, limit = 10): Promise<Video[]> {
+  return query<Video>(
+    "select * from vc_videos where user_id = $1 and status = 'published' order by published_at desc nulls last limit $2",
+    [userId, limit],
+  );
+}
+
+export async function getOwnedVideo(userId: string, id: string): Promise<Video | null> {
+  return queryOne<Video>("select * from vc_videos where id = $1 and user_id = $2", [id, userId]);
+}
+
+/** O dono postou o vídeo por conta própria (postar com um toque). */
+export async function markPostedByUser(userId: string, id: string): Promise<boolean> {
+  const rows = await updateRows<Video>(
+    "vc_videos",
+    { status: "published", published_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    "id = $1 and user_id = $2 and status = 'ready'",
+    [id, userId],
+  );
+  return rows.length > 0;
+}
+
 /** Volta um vídeo com erro para a etapa certa: renderizar de novo ou só tentar postar de novo. */
 export async function retryVideo(userId: string, id: string) {
   const v = await queryOne<Video>("select * from vc_videos where id = $1 and user_id = $2", [id, userId]);
